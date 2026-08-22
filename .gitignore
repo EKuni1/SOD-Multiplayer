@@ -1,59 +1,65 @@
 ```
-# Build artifacts
-*.dll
-*.exe
-*.pdb
-*.so
-*.dylib
-*.o
-*.obj
-*.a
-*.lib
-*.out
-
 # Dependencies
-packages/
-lib/
 node_modules/
-vendor/
-
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.temp
-*.cache
-
-# Environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
 .env
 .env.local
-*.env.*
+.env.*
 
-# Editor/IDE
-.vs/
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# Logs
+*.log
+
+# OS files
 .DS_Store
 Thumbs.db
 
-# Build directories
+# Python specific
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# C#/.NET specific
 bin/
 obj/
-Debug/
-Release/
-build/
-dist/
-target/
-
-# Unity/Mono specific
-Library/
-Temp/
-Obj/
-Logs/
-UserSettings/
+*.userprefs
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
 ```
