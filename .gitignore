@@ -1,65 +1,42 @@
 ```
-# Dependencies
-node_modules/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-.env
-.env.local
-.env.*
-
 # Build artifacts
-dist/
-build/
-*.egg-info/
-.eggs/
+*.obj
+*.exe
+*.dll
+*.pdb
+*.nupkg
+*.unitypackage
 
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
+# Dependencies
+packages/
+node_modules/
 
 # Logs
 *.log
 
-# OS files
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Python specific
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# Visual Studio Code
+.vscode/
 
-# C#/.NET specific
-bin/
-obj/
+# Unity specific
+Library/
+Temp/
+Obj/
+Build/
+*.unityproj
+*.sln
+*.csproj
 *.userprefs
+*.pidb
 *.user
-*.suo
-*.userosscache
-*.sln.docstates
-.vs/
+*.unity
+*.meta
+
+# Configuration files that might contain secrets
+.config/
+*.config
+!*.config.default
 ```
