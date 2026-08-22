@@ -1,0 +1,59 @@
+```
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+*.o
+*.obj
+*.a
+*.lib
+*.out
+
+# Dependencies
+packages/
+lib/
+node_modules/
+vendor/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editor/IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build directories
+bin/
+obj/
+Debug/
+Release/
+build/
+dist/
+target/
+
+# Unity/Mono specific
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+```
