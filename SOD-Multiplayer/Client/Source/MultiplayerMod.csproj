@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SOD.Multiplayer.Client</RootNamespace>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\SOD.Multiplayer.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- HINWEIS: Passe diese Pfade an deinen Shadows of Doubt Installationsordner an -->
+    <!-- Beispiel: C:\Program Files (x86)\Steam\steamapps\common\Shadows of Doubt -->
+    
+    <!-- BepInEx Core -->
+    <Reference Include="BepInEx.Core">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\Core\BepInEx.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\Core\BepInEx.Unity.IL2CPP.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Harmony -->
+    <Reference Include="0Harmony">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\Core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity Engine (Wichtig für UI und MonoBehaviours) -->
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>E:\Games\Shadows of Doubt\Unity\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>E:\Games\Shadows of Doubt\Unity\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>E:\Games\Shadows of Doubt\Unity\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Shadows of Doubt Haupt-Assembly (Hier sind die Spiel-Klassen drin) -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>E:\Games\Shadows of Doubt\Game\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <!-- Falls das Spiel Il2Cpp verwendet, brauchst du evtl. auch diese Referenz -->
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\Core\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

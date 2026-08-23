@@ -1,0 +1,30 @@
+```gitignore
+# Build artifacts
+*.props.user
+*.sln.cache
+*.userprefs
+
+# Dependencies
+packages/
+bin/
+obj/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+```

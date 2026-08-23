@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- HIER DEINEN SPIELPFAD EINTRAGEN -->
+    <SODGamePath>E:\Games\Shadows of Doubt</SODGamePath>
+  </PropertyGroup>
+</Project>
