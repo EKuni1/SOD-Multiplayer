@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Il2CppInterop.Runtime;
 using SOD.Multiplayer.Client.Network;
 using SOD.Multiplayer.Shared;
 
@@ -65,15 +66,15 @@ namespace SOD.Multiplayer.Client.UI
             
             // Create refresh button
             CreateButton(_serverBrowserPanel.transform, "RefreshBtn", "REFRESH LIST", 
-                new Vector2(-150, -170), new Vector2(120, 40), OnRefreshClicked);
+                new Vector2(-150, -170), new Vector2(120, 40), () => OnRefreshClicked());
             
             // Create join button
             CreateButton(_serverBrowserPanel.transform, "JoinBtn", "JOIN SERVER", 
-                new Vector2(0, -170), new Vector2(120, 40), OnJoinClicked);
+                new Vector2(0, -170), new Vector2(120, 40), () => OnJoinClicked());
             
             // Create close button
             CreateButton(_serverBrowserPanel.transform, "CloseBtn", "CLOSE", 
-                new Vector2(150, -170), new Vector2(120, 40), OnCloseClicked);
+                new Vector2(150, -170), new Vector2(120, 40), () => OnCloseClicked());
             
             // Create password input (hidden by default)
             _passwordInput = CreateInputField(_serverBrowserPanel.transform, "PasswordInput", 
@@ -105,13 +106,14 @@ namespace SOD.Multiplayer.Client.UI
             }
             
             // Fetch server list from master server
-            StartCoroutine(FetchServers());
+            StartCoroutine(nameof(FetchServers));
         }
         
         private System.Collections.IEnumerator FetchServers()
         {
-            using (var www = UnityEngine.Networking.UnityWebRequest.Get($"{_masterServerUrl}/api/servers"))
+            var www = UnityEngine.Networking.UnityWebRequest.Get($"{_masterServerUrl}/api/servers");
             {
+                
                 yield return www.SendWebRequest();
                 
                 if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
@@ -241,7 +243,7 @@ namespace SOD.Multiplayer.Client.UI
         }
         
         private GameObject CreateButton(Transform parent, string name, string text, 
-            Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction onClick)
+            Vector2 pos, Vector2 size, Action onClick)
         {
             var obj = CreatePanel(parent, name, pos, size);
             obj.GetComponent<Image>().color = new Color(0.3f, 0.3f, 0.3f, 0.9f);
@@ -263,7 +265,7 @@ namespace SOD.Multiplayer.Client.UI
             tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.Center;
             
-            btn.onClick.AddListener(onClick);
+            btn.onClick.AddListener(DelegateSupport.ConvertDelegate<UnityEngine.Events.UnityAction>(onClick));
             
             return obj;
         }

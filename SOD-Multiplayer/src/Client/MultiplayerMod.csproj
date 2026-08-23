@@ -20,6 +20,14 @@
       <HintPath>$(SODGamePath)\BepInEx\core\BepInEx.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>$(SODGamePath)\BepInEx\core\BepInEx.Unity.IL2CPP.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(SODGamePath)\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="0Harmony">
       <HintPath>$(SODGamePath)\BepInEx\core\0Harmony.dll</HintPath>
       <Private>false</Private>
@@ -27,25 +35,41 @@
     
     <!-- Unity Assemblies from Shadows of Doubt -->
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(SODGamePath)\MelonLoader\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(SODGamePath)\BepInEx\interop\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>$(SODGamePath)\MelonLoader\Managed\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(SODGamePath)\BepInEx\interop\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(SODGamePath)\BepInEx\interop\UnityEngine.UIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(SODGamePath)\MelonLoader\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(SODGamePath)\BepInEx\interop\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>$(SODGamePath)\BepInEx\interop\UnityEngine.UnityWebRequestModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>$(SODGamePath)\MelonLoader\Managed\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>$(SODGamePath)\BepInEx\interop\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
     
     <!-- Game Assembly - Contains SessionData and other game classes -->
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(SODGamePath)\MelonLoader\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(SODGamePath)\BepInEx\interop\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(SODGamePath)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem">
+      <HintPath>$(SODGamePath)\BepInEx\interop\Il2CppSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

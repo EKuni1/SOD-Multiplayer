@@ -1,4 +1,5 @@
 using BepInEx;
+using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using UnityEngine;
 
@@ -8,7 +9,7 @@ namespace SOD.Multiplayer.Client
     public class MultiplayerMod : BasePlugin
     {
         public static MultiplayerMod Instance { get; private set; }
-        public Harmony HarmonyInstance { get; private set; }
+        public HarmonyLib.Harmony HarmonyInstance { get; private set; }
         
         public override void Load()
         {
@@ -17,7 +18,7 @@ namespace SOD.Multiplayer.Client
             Log.LogInfo("Shadows of Doubt Multiplayer Mod loaded!");
             
             // Initialize Harmony
-            HarmonyInstance = new Harmony("com.sod.multiplayer");
+            HarmonyInstance = new HarmonyLib.Harmony("com.sod.multiplayer");
             HarmonyInstance.PatchAll();
             
             Log.LogInfo("Harmony patches applied successfully.");
