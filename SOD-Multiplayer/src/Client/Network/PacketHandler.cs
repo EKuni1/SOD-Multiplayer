@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using SOD.Multiplayer.Shared;
+using SOD.Multiplayer.Client.Harmony;
 
 namespace SOD.Multiplayer.Client.Network
 {
     public class PacketHandler
     {
+        public event Action<GameStatePacket> GameStateReceived;
+        public event Action<ChatPacket> ChatReceived;
         private NetworkClient _client;
         
         public PacketHandler(NetworkClient client)
@@ -100,6 +103,7 @@ namespace SOD.Multiplayer.Client.Network
         {
             // Update game state based on server data
             UnityEngine.Debug.Log($"[SOD Multiplayer] Game state update: Time={packet.TimeOfDay}");
+            GameStateReceived?.Invoke(packet);
         }
 
         private void OnPlayerUpdateReceived(PlayerUpdatePacket packet)
@@ -113,21 +117,20 @@ namespace SOD.Multiplayer.Client.Network
         {
             if (packet == null) return;
             UnityEngine.Debug.Log($"[SOD Multiplayer] {packet.EntityType} {packet.EntityId}: {packet.Action}");
-            // Domain hooks apply the authoritative state to the local scene.
+            WorldSync.Apply(packet);
         }
 
         private void OnWorldSnapshotReceived(WorldSnapshotPacket packet)
         {
             if (packet == null) return;
             UnityEngine.Debug.Log($"[SOD Multiplayer] World snapshot {packet.Revision} received; weather={packet.Weather}");
-            // Domain hooks replace local case, citizen, pinboard, door, elevator,
-            // item, opening-hours, time, and weather state from this snapshot.
+            WorldSync.Apply(packet);
         }
         
         private void OnChatMessage(ChatPacket packet)
         {
             UnityEngine.Debug.Log($"[SOD Multiplayer] Chat: {packet.Message}");
-            // Display chat message in UI
+            ChatReceived?.Invoke(packet);
         }
     }
 }

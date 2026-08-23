@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -19,6 +20,8 @@ namespace SOD.Multiplayer.Dedicated
         private bool _hasPassword;
         private string _masterServerUrl;
         private string _masterAuthToken;
+        private string _selectedSavePath = "";
+        private string _selectedMapName = "";
         private string _serverId;
         private readonly object _worldStateLock = new();
         private readonly WorldSnapshotPacket _worldSnapshot = new()
@@ -27,6 +30,7 @@ namespace SOD.Multiplayer.Dedicated
             Weather = "Clear"
         };
         private long _worldRevision;
+        private readonly string _worldStatePath = Path.Combine(AppContext.BaseDirectory, "world-state.json");
         
         public const int MAX_PLAYERS = 4;
         
@@ -39,6 +43,7 @@ namespace SOD.Multiplayer.Dedicated
             _masterServerUrl = masterServerUrl;
             _masterAuthToken = masterAuthToken;
             _serverId = Guid.NewGuid().ToString();
+            LoadWorldState();
         }
         
         public async Task StartAsync()
@@ -120,7 +125,8 @@ namespace SOD.Multiplayer.Dedicated
             {
                 Type = PacketType.JoinAccepted,
                 Accepted = true,
-                AssignedPlayerId = playerId
+                AssignedPlayerId = playerId,
+                IsHost = client == _clients[0]
             };
             await client.SendPacketAsync(acceptResponse);
             
@@ -134,6 +140,18 @@ namespace SOD.Multiplayer.Dedicated
             // Send current player list to new player
             await SendPlayerListAsync(client);
             await client.SendPacketAsync(GetWorldSnapshot());
+        }
+
+        public async Task HandleSessionSelectedAsync(ClientConnection client, SessionSelectedPacket packet)
+        {
+            if (_clients.Count == 0 || client != _clients[0])
+                return;
+
+            _selectedSavePath = packet.SavePath ?? "";
+            _selectedMapName = packet.MapName ?? "";
+            SaveWorldState();
+            packet.Type = PacketType.SessionSelectedBroadcast;
+            await BroadcastAsync(packet);
         }
         
         public void HandlePlayerLeave(ClientConnection client)
@@ -190,6 +208,14 @@ namespace SOD.Multiplayer.Dedicated
 
         public async Task HandlePlayerUpdateAsync(ClientConnection client, PlayerUpdatePacket packet)
         {
+            client.PositionX = packet.PositionX;
+            client.PositionY = packet.PositionY;
+            client.PositionZ = packet.PositionZ;
+            client.RotationX = packet.RotationX;
+            client.RotationY = packet.RotationY;
+            client.RotationZ = packet.RotationZ;
+            client.RotationW = packet.RotationW;
+
             await BroadcastToOthersAsync(client, new PlayerUpdatePacket
             {
                 Type = PacketType.PlayerUpdate,
@@ -234,6 +260,7 @@ namespace SOD.Multiplayer.Dedicated
             }
 
             await BroadcastAsync(authoritativeAction);
+            SaveWorldState();
         }
 
         public async Task HandleWorldSnapshotAsync(ClientConnection client, WorldSnapshotPacket packet)
@@ -256,6 +283,48 @@ namespace SOD.Multiplayer.Dedicated
             }
 
             await BroadcastAsync(GetWorldSnapshot());
+            SaveWorldState();
+        }
+
+        private void LoadWorldState()
+        {
+            try
+            {
+                if (!File.Exists(_worldStatePath))
+                    return;
+
+                var saved = JsonConvert.DeserializeObject<WorldSnapshotPacket>(File.ReadAllText(_worldStatePath));
+                if (saved == null)
+                    return;
+
+                lock (_worldStateLock)
+                {
+                    _worldRevision = saved.Revision;
+                    _worldSnapshot.Revision = saved.Revision;
+                    _worldSnapshot.ServerTick = saved.ServerTick;
+                    _worldSnapshot.TimeOfDay = saved.TimeOfDay;
+                    _worldSnapshot.Weather = saved.Weather;
+                    _worldSnapshot.Entities = saved.Entities ?? new List<WorldEntityState>();
+                    _worldSnapshot.Citizens = saved.Citizens ?? new List<CitizenState>();
+                }
+                Console.WriteLine($"[Dedicated Server] World state loaded from {_worldStatePath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Dedicated Server] World state load failed: {ex.Message}");
+            }
+        }
+
+        private void SaveWorldState()
+        {
+            try
+            {
+                File.WriteAllText(_worldStatePath, JsonConvert.SerializeObject(GetWorldSnapshot(), Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Dedicated Server] World state save failed: {ex.Message}");
+            }
         }
 
         public async Task SendWorldSnapshotAsync(ClientConnection client)
@@ -355,7 +424,10 @@ namespace SOD.Multiplayer.Dedicated
                         gameState.Players.Add(new PlayerInfo
                         {
                             Id = client.PlayerId,
-                            Name = client.PlayerName
+                            Name = client.PlayerName,
+                            PositionX = client.PositionX,
+                            PositionY = client.PositionY,
+                            PositionZ = client.PositionZ
                         });
                     }
                     
@@ -377,6 +449,13 @@ namespace SOD.Multiplayer.Dedicated
         
         public string PlayerId { get; set; } = "";
         public string PlayerName { get; set; } = "";
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+        public float PositionZ { get; set; }
+        public float RotationX { get; set; }
+        public float RotationY { get; set; }
+        public float RotationZ { get; set; }
+        public float RotationW { get; set; } = 1f;
         
         public ClientConnection(TcpClient client, GameServer server)
         {
@@ -460,6 +539,11 @@ namespace SOD.Multiplayer.Dedicated
 
                     case PacketType.WorldSnapshotRequest:
                         await _server.SendWorldSnapshotAsync(this);
+                        break;
+
+                    case PacketType.SessionSelected:
+                        var session = JsonConvert.DeserializeObject<SessionSelectedPacket>(json);
+                        await _server.HandleSessionSelectedAsync(this, session);
                         break;
 
                     case PacketType.WorldSnapshot:

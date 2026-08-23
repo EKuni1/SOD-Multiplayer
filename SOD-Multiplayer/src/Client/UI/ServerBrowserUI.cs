@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Il2CppInterop.Runtime;
+using Il2CppInterop.Runtime.Injection;
 using SOD.Multiplayer.Client.Network;
 using SOD.Multiplayer.Shared;
 
@@ -11,6 +12,15 @@ namespace SOD.Multiplayer.Client.UI
 {
     public class ServerBrowserUI : MonoBehaviour
     {
+        public ServerBrowserUI(IntPtr ptr) : base(ptr)
+        {
+        }
+
+        public ServerBrowserUI() : this(ClassInjector.DerivedConstructorPointer<ServerBrowserUI>())
+        {
+            ClassInjector.DerivedConstructorBody(this);
+        }
+
         private static ServerBrowserUI _instance;
         public static ServerBrowserUI Instance => _instance;
         
@@ -23,6 +33,10 @@ namespace SOD.Multiplayer.Client.UI
         
         private NetworkClient _networkClient;
         private PacketHandler _packetHandler;
+        private readonly Dictionary<string, PlayerInfo> _remotePlayerStates = new();
+        private float _nextPositionUpdate;
+        private TextMeshProUGUI _chatOutput;
+        private TMP_InputField _chatInput;
         
         // Master Server URL
         private string _masterServerUrl = "http://192.168.178.76:5000";
@@ -81,6 +95,9 @@ namespace SOD.Multiplayer.Client.UI
             _passwordInput = CreateInputField(_serverBrowserPanel.transform, "PasswordInput", 
                 "Enter Password", new Vector2(0, -230), new Vector2(200, 30));
             _passwordInput.gameObject.SetActive(false);
+
+            _chatOutput = CreateLabel(_serverBrowserPanel.transform, "Chat", "", 
+                new Vector2(0, -270), new Vector2(380, 40), 12, Color.white).GetComponent<TextMeshProUGUI>();
             
             _serverBrowserPanel.SetActive(false);
             
@@ -141,6 +158,8 @@ namespace SOD.Multiplayer.Client.UI
         {
             var entry = CreatePanel(_serverListContent, $"Server_{server.Id}", 
                 Vector2.zero, new Vector2(380, 50));
+            var selectButton = entry.AddComponent<Button>();
+            selectButton.targetGraphic = entry.GetComponent<Image>();
             
             // Server name
             CreateLabel(entry.transform, "Name", server.Name, 
@@ -161,6 +180,8 @@ namespace SOD.Multiplayer.Client.UI
             selectData.ServerIp = server.Ip;
             selectData.ServerPort = server.Port;
             selectData.HasPassword = server.HasPassword;
+            selectButton.onClick.AddListener(DelegateSupport.ConvertDelegate<UnityEngine.Events.UnityAction>(
+                () => OnServerSelected(selectData)));
         }
         
         private void OnServerSelected(ServerSelectData data)
@@ -197,6 +218,19 @@ namespace SOD.Multiplayer.Client.UI
             // Initialize network client
             _networkClient = new NetworkClient();
             _packetHandler = new PacketHandler(_networkClient);
+            _packetHandler.GameStateReceived += state =>
+            {
+                foreach (var player in state.Players)
+                {
+                    if (player.Id != _networkClient.PlayerId)
+                        _remotePlayerStates[player.Id] = player;
+                }
+            };
+            _packetHandler.ChatReceived += chat =>
+            {
+                if (_chatOutput != null)
+                    _chatOutput.text = chat.Message;
+            };
             
             _networkClient.OnConnected += () =>
             {
@@ -205,6 +239,37 @@ namespace SOD.Multiplayer.Client.UI
             };
             
             _networkClient.Connect(_selectedServerIp, _selectedServerPort);
+        }
+
+        public void Update()
+        {
+            if (_networkClient == null || !_networkClient.IsConnected)
+                return;
+
+            if (Time.unscaledTime >= _nextPositionUpdate && Player.Instance != null)
+            {
+                var position = Player.Instance.transform.position;
+                _networkClient.SendPlayerUpdate(position.x, position.y, position.z);
+                _nextPositionUpdate = Time.unscaledTime + 0.1f;
+            }
+
+            foreach (var state in _remotePlayerStates.Values)
+            {
+                if (!_remotePlayerStates.TryGetValue(state.Id, out var current))
+                    continue;
+
+                var markerName = $"SOD_RemotePlayer_{current.Id}";
+                var marker = GameObject.Find(markerName);
+                if (marker == null)
+                {
+                    marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    marker.name = markerName;
+                    marker.transform.localScale = Vector3.one * 0.5f;
+                }
+
+                var target = new Vector3(current.PositionX, current.PositionY, current.PositionZ);
+                marker.transform.position = Vector3.Lerp(marker.transform.position, target, Time.unscaledDeltaTime * 20f);
+            }
         }
         
         private void OnCloseClicked()
@@ -305,6 +370,15 @@ namespace SOD.Multiplayer.Client.UI
     // Component to store server selection data
     public class ServerSelectData : MonoBehaviour
     {
+        public ServerSelectData(IntPtr ptr) : base(ptr)
+        {
+        }
+
+        public ServerSelectData() : this(ClassInjector.DerivedConstructorPointer<ServerSelectData>())
+        {
+            ClassInjector.DerivedConstructorBody(this);
+        }
+
         public string ServerIp { get; set; }
         public int ServerPort { get; set; }
         public bool HasPassword { get; set; }

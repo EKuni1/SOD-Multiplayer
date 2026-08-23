@@ -9,6 +9,8 @@ namespace SOD.Multiplayer.Client.Network
 {
     public class NetworkClient
     {
+        public static NetworkClient Active { get; private set; }
+
         private TcpClient _client;
         private NetworkStream _stream;
         private bool _connected = false;
@@ -19,9 +21,26 @@ namespace SOD.Multiplayer.Client.Network
         public event Action<Packet> OnPacketReceived;
         public event Action OnConnected;
         public event Action OnDisconnected;
+        public event Action<SessionSelectedPacket> OnSessionSelected;
         
         public bool IsConnected => _connected;
         public string PlayerId => _playerId;
+
+        public NetworkClient()
+        {
+            Active = this;
+        }
+
+        public void SendSessionSelected(string savePath, string mapName)
+        {
+            SendPacket(new SessionSelectedPacket
+            {
+                Type = PacketType.SessionSelected,
+                SenderId = _playerId,
+                SavePath = savePath ?? "",
+                MapName = mapName ?? ""
+            });
+        }
         
         public void Connect(string ip, int port)
         {
@@ -95,6 +114,7 @@ namespace SOD.Multiplayer.Client.Network
             try
             {
                 string json = JsonConvert.SerializeObject(packet);
+                RuntimeDiagnostics.RecordPacket(packet, "out");
                 byte[] data = Encoding.UTF8.GetBytes(json + "\n");
                 _stream.Write(data, 0, data.Length);
             }
@@ -194,6 +214,7 @@ namespace SOD.Multiplayer.Client.Network
                         try
                         {
                             var packet = DeserializePacket(packetJson);
+                            RuntimeDiagnostics.RecordPacket(packet, "in");
                             
                             // Handle join response specially
                             if (packet.Type == PacketType.JoinAccepted)
@@ -203,6 +224,10 @@ namespace SOD.Multiplayer.Client.Network
                                 UnityEngine.Debug.Log($"[SOD Multiplayer] Joined as player: {_playerId}");
                             }
                             
+                            if (packet is SessionSelectedPacket session)
+                                OnSessionSelected?.Invoke(session);
+                            if (packet is JoinResponsePacket hostResponse && hostResponse.Accepted)
+                                MultiplayerMod.IsHost = hostResponse.IsHost;
                             OnPacketReceived?.Invoke(packet);
                         }
                         catch (Exception ex)
@@ -239,6 +264,7 @@ namespace SOD.Multiplayer.Client.Network
                 PacketType.WorldAction or PacketType.WorldActionBroadcast =>
                     JsonConvert.DeserializeObject<WorldActionPacket>(json),
                 PacketType.WorldSnapshot => JsonConvert.DeserializeObject<WorldSnapshotPacket>(json),
+                PacketType.SessionSelectedBroadcast => JsonConvert.DeserializeObject<SessionSelectedPacket>(json),
                 _ => header
             } ?? throw new InvalidOperationException("Packet could not be deserialized");
         }

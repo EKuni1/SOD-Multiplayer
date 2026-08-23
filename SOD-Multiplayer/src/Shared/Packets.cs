@@ -13,6 +13,7 @@ namespace SOD.Multiplayer.Shared
         ChatMessage = 4,
         WorldAction = 5,
         WorldSnapshotRequest = 6,
+        SessionSelected = 7,
         
         // Server -> Client
         JoinAccepted = 10,
@@ -24,6 +25,7 @@ namespace SOD.Multiplayer.Shared
         ChatBroadcast = 16,
         WorldActionBroadcast = 17,
         WorldSnapshot = 18,
+        SessionSelectedBroadcast = 19,
         
         // Master Server
         ServerRegister = 20,
@@ -51,6 +53,13 @@ namespace SOD.Multiplayer.Shared
         public bool Accepted { get; set; }
         public string Reason { get; set; } = "";
         public string AssignedPlayerId { get; set; } = "";
+        public bool IsHost { get; set; }
+    }
+
+    public class SessionSelectedPacket : Packet
+    {
+        public string SavePath { get; set; } = "";
+        public string MapName { get; set; } = "";
     }
 
     // Player Info
