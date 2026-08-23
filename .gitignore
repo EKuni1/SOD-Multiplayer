@@ -1,39 +1,30 @@
-```
+```gitignore
 # Build artifacts
-*.obj
-*.exe
-*.dll
-*.pdb
-*.nupkg
-*.snupkg
-**/bin/
-**/obj/
+*.props.user
+*.sln.cache
+*.userprefs
 
 # Dependencies
 packages/
-node_modules/
-vendor/
-
-# IDE specific
-.vs/
-.idea/
-*.userprefs
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# OS generated
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Icon?
-._*
+bin/
+obj/
 
 # Logs
 *.log
 
-# User-specific configurations
-*.userprefs
-.vsconfig
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
 ```
