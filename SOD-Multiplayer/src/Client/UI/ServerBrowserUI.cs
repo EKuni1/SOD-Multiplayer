@@ -25,7 +25,7 @@ namespace SOD.Multiplayer.Client.UI
         private PacketHandler _packetHandler;
         
         // Master Server URL
-        private string _masterServerUrl = "http://localhost:27016";
+        private string _masterServerUrl = "http://192.168.178.76:5000";
         
         public void Awake()
         {
@@ -113,6 +113,7 @@ namespace SOD.Multiplayer.Client.UI
         private System.Collections.IEnumerator FetchServers()
         {
             var www = UnityEngine.Networking.UnityWebRequest.Get($"{_masterServerUrl}/api/servers");
+            www.SetRequestHeader("X-Auth-Token", MultiplayerMod.MasterServerAuthToken ?? "");
             {
                 
                 yield return www.SendWebRequest();

@@ -306,9 +306,11 @@ sudo systemctl start sod-master
 ### Master Server (master.cfg)
 ```json
 {
-  "port": 27016,
+  "bindAddress": "192.168.178.76",
+  "port": 5000,
   "heartbeatTimeout": 30,
-  "region": "EU"
+  "region": "EU",
+  "authToken": "change-this-token"
 }
 ```
 

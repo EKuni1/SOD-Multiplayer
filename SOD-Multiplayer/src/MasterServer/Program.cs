@@ -25,7 +25,7 @@ namespace SOD.Multiplayer.Master
             
             var config = LoadConfig(args);
             var builder = WebApplication.CreateBuilder(args);
-            builder.WebHost.UseUrls($"http://0.0.0.0:{config.Port}");
+            builder.WebHost.UseUrls($"http://{config.BindAddress}:{config.Port}");
             builder.Services.AddCors();
             
             var app = builder.Build();
@@ -40,8 +40,11 @@ namespace SOD.Multiplayer.Master
             });
             
             // Get server list
-            app.MapGet("/api/servers", () =>
+            app.MapGet("/api/servers", (HttpContext http) =>
             {
+                if (!IsAuthorized(config, http))
+                    return Results.Unauthorized();
+
                 // Filter out servers that haven't sent a heartbeat within the configured timeout.
                 var now = DateTime.UtcNow;
                 var activeServers = _servers.Values
@@ -54,6 +57,9 @@ namespace SOD.Multiplayer.Master
             // Register server (heartbeat)
             app.MapPost("/api/servers/register", async (HttpContext http) =>
             {
+                if (!IsAuthorized(config, http))
+                    return Results.Unauthorized();
+
                 using var reader = new StreamReader(http.Request.Body);
                 var json = await reader.ReadToEndAsync();
                 
@@ -81,8 +87,11 @@ namespace SOD.Multiplayer.Master
             });
             
             // Unregister server
-            app.MapDelete("/api/servers/{id}", (string id) =>
+            app.MapDelete("/api/servers/{id}", (string id, HttpContext http) =>
             {
+                if (!IsAuthorized(config, http))
+                    return Results.Unauthorized();
+
                 if (_servers.TryRemove(id, out var server))
                 {
                     Console.WriteLine($"[Master] Server unregistered: {server.Name}");
@@ -92,10 +101,16 @@ namespace SOD.Multiplayer.Master
                 return Results.NotFound(new { Error = "Server not found" });
             });
             
-            Console.WriteLine($"Master Server is running on http://localhost:{config.Port}");
+            Console.WriteLine($"Master Server is running on http://{config.BindAddress}:{config.Port}");
             Console.WriteLine("Press Ctrl+C to stop.\n");
             
             app.Run();
+        }
+
+        private static bool IsAuthorized(MasterConfig config, HttpContext http)
+        {
+            return string.IsNullOrEmpty(config.AuthToken)
+                || string.Equals(http.Request.Headers["X-Auth-Token"], config.AuthToken, StringComparison.Ordinal);
         }
 
         private static MasterConfig LoadConfig(string[] args)
@@ -129,9 +144,11 @@ namespace SOD.Multiplayer.Master
 
         private sealed class MasterConfig
         {
-            public int Port { get; set; } = 27016;
+            public string BindAddress { get; set; } = "192.168.178.76";
+            public int Port { get; set; } = 5000;
             public int HeartbeatTimeout { get; set; } = 30;
             public string Region { get; set; } = "EU";
+            public string AuthToken { get; set; } = "change-this-token";
         }
     }
 }

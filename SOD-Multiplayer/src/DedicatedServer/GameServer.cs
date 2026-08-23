@@ -18,6 +18,7 @@ namespace SOD.Multiplayer.Dedicated
         private string _password;
         private bool _hasPassword;
         private string _masterServerUrl;
+        private string _masterAuthToken;
         private string _serverId;
         private readonly object _worldStateLock = new();
         private readonly WorldSnapshotPacket _worldSnapshot = new()
@@ -29,13 +30,14 @@ namespace SOD.Multiplayer.Dedicated
         
         public const int MAX_PLAYERS = 4;
         
-        public GameServer(string name, int port, string password, string masterServerUrl)
+        public GameServer(string name, int port, string password, string masterServerUrl, string masterAuthToken)
         {
             _serverName = name;
             _port = port;
             _password = password;
             _hasPassword = !string.IsNullOrEmpty(password);
             _masterServerUrl = masterServerUrl;
+            _masterAuthToken = masterAuthToken;
             _serverId = Guid.NewGuid().ToString();
         }
         
@@ -167,7 +169,7 @@ namespace SOD.Multiplayer.Dedicated
             await client.SendPacketAsync(gameState);
         }
         
-        private async Task BroadcastAsync(Packet packet)
+        internal async Task BroadcastAsync(Packet packet)
         {
             foreach (var client in _clients)
             {
@@ -299,6 +301,7 @@ namespace SOD.Multiplayer.Dedicated
                     using (var httpClient = new System.Net.Http.HttpClient())
                     {
                         var content = new StringContent(JsonConvert.SerializeObject(serverInfo), Encoding.UTF8, "application/json");
+                        httpClient.DefaultRequestHeaders.Add("X-Auth-Token", _masterAuthToken);
                         var response = await httpClient.PostAsync($"{_masterServerUrl}/api/servers/register", content);
                         
                         if (response.IsSuccessStatusCode)

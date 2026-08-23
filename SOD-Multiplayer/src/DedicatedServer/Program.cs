@@ -16,7 +16,8 @@ namespace SOD.Multiplayer.Dedicated
             string serverName = Environment.GetEnvironmentVariable("SOD_SERVER_NAME") ?? "My SOD Server";
             int port = int.Parse(Environment.GetEnvironmentVariable("SOD_SERVER_PORT") ?? "7777");
             string password = Environment.GetEnvironmentVariable("SOD_SERVER_PASSWORD") ?? "";
-            string masterServerUrl = Environment.GetEnvironmentVariable("SOD_MASTER_URL") ?? "http://localhost:5000";
+            string masterServerUrl = Environment.GetEnvironmentVariable("SOD_MASTER_URL") ?? "http://192.168.178.76:5000";
+            string masterAuthToken = Environment.GetEnvironmentVariable("SOD_MASTER_AUTH_TOKEN") ?? "change-this-token";
             
             Console.WriteLine($"\nConfiguration:");
             Console.WriteLine($"  Server Name: {serverName}");
@@ -26,7 +27,7 @@ namespace SOD.Multiplayer.Dedicated
             Console.WriteLine($"  Max Players: 4");
             Console.WriteLine();
             
-            var gameServer = new GameServer(serverName, port, password, masterServerUrl);
+            var gameServer = new GameServer(serverName, port, password, masterServerUrl, masterAuthToken);
             await gameServer.StartAsync();
             
             Console.WriteLine("\nServer is running. Press Ctrl+C to stop.");

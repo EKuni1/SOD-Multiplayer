@@ -10,6 +10,7 @@ namespace SOD.Multiplayer.Client
     {
         public static MultiplayerMod Instance { get; private set; }
         public static string MasterServerUrl { get; private set; }
+        public static string MasterServerAuthToken { get; private set; }
         public HarmonyLib.Harmony HarmonyInstance { get; private set; }
         
         public override void Load()
@@ -18,8 +19,13 @@ namespace SOD.Multiplayer.Client
             MasterServerUrl = Config.Bind(
                 "Master Server",
                 "Url",
-                "http://localhost:27016",
+                "http://192.168.178.76:5000",
                 "URL des Master Servers für die Serverliste.").Value.TrimEnd('/');
+            MasterServerAuthToken = Config.Bind(
+                "Master Server",
+                "AuthToken",
+                "change-this-token",
+                "Authentifizierungs-Token des Master Servers.").Value;
             
             Log.LogInfo("Shadows of Doubt Multiplayer Mod loaded!");
             Log.LogInfo($"Master Server URL: {MasterServerUrl}");
