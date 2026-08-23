@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -22,7 +23,9 @@ namespace SOD.Multiplayer.Master
             Console.WriteLine("  Server List & Discovery Service");
             Console.WriteLine("========================================\n");
             
+            var config = LoadConfig(args);
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.UseUrls($"http://0.0.0.0:{config.Port}");
             builder.Services.AddCors();
             
             var app = builder.Build();
@@ -39,10 +42,10 @@ namespace SOD.Multiplayer.Master
             // Get server list
             app.MapGet("/api/servers", () =>
             {
-                // Filter out servers that haven't sent heartbeat in 30 seconds
+                // Filter out servers that haven't sent a heartbeat within the configured timeout.
                 var now = DateTime.UtcNow;
                 var activeServers = _servers.Values
-                    .Where(s => (now - s.LastHeartbeat).TotalSeconds < 30)
+                    .Where(s => (now - s.LastHeartbeat).TotalSeconds < config.HeartbeatTimeout)
                     .ToList();
                 
                 return Results.Json(activeServers);
@@ -89,10 +92,46 @@ namespace SOD.Multiplayer.Master
                 return Results.NotFound(new { Error = "Server not found" });
             });
             
-            Console.WriteLine("Master Server is running on http://localhost:5000");
+            Console.WriteLine($"Master Server is running on http://localhost:{config.Port}");
             Console.WriteLine("Press Ctrl+C to stop.\n");
             
             app.Run();
+        }
+
+        private static MasterConfig LoadConfig(string[] args)
+        {
+            var configPath = Environment.GetEnvironmentVariable("SOD_MASTER_CONFIG")
+                ?? Path.Combine(AppContext.BaseDirectory, "master.cfg");
+            var config = new MasterConfig();
+
+            if (File.Exists(configPath))
+            {
+                var json = File.ReadAllText(configPath);
+                config = JsonConvert.DeserializeObject<MasterConfig>(json) ?? config;
+                Console.WriteLine($"Master-Konfiguration geladen: {configPath}");
+            }
+            else
+            {
+                Console.WriteLine($"Keine Master-Konfiguration gefunden: {configPath}; Defaults werden verwendet.");
+            }
+
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("--port=", StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(arg[7..], out var port))
+                {
+                    config.Port = port;
+                }
+            }
+
+            return config;
+        }
+
+        private sealed class MasterConfig
+        {
+            public int Port { get; set; } = 27016;
+            public int HeartbeatTimeout { get; set; } = 30;
+            public string Region { get; set; } = "EU";
         }
     }
 }

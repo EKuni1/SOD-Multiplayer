@@ -25,7 +25,7 @@ namespace SOD.Multiplayer.Client.UI
         private PacketHandler _packetHandler;
         
         // Master Server URL
-        private string _masterServerUrl = "http://localhost:5000";
+        private string _masterServerUrl = "http://localhost:27016";
         
         public void Awake()
         {
@@ -37,6 +37,7 @@ namespace SOD.Multiplayer.Client.UI
             
             _instance = this;
             DontDestroyOnLoad(gameObject);
+            _masterServerUrl = MultiplayerMod.MasterServerUrl ?? _masterServerUrl;
             
             InitializeUI();
         }
