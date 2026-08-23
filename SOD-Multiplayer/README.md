@@ -10,6 +10,45 @@ Dieses Projekt entwickelt eine vollständige Multiplayer-Mod für Shadow of Doub
 
 ---
 
+## Aktueller Funktionsstand
+
+### Verfügbar
+
+- TCP-Verbindung zwischen Client und Dedicated Server mit newline-delimited JSON
+- Join/Leave, Spieler-ID, Spielernamen, Host-Erkennung und Limit von vier Spielern
+- Passwortprüfung beim Beitritt
+- Spielerpositionen und Rotationen als typisierte Updates
+- Chat-Broadcasts
+- Serverregistrierung, Serverliste und Heartbeat über den Master Server
+- Versionierte Welt-Snapshots mit Server-Tick und Revision
+- Autoritative Weltaktionen für Fälle, Citizens, Pinboard, Türen, Firmen/Öffnungszeiten, Aufzüge, Items und Objekte
+- Weltzustand wird beim Beitritt oder auf Anfrage an Clients verteilt
+- Der erste Spieler ist Snapshot-Host; nur sein vollständiger Snapshot wird als Weltzustand akzeptiert
+
+### Noch erforderliche Unity-/Harmony-Anbindung
+
+Die Netzwerkverteilung ist vorbereitet, aber die Spiel-Assembly muss die lokalen Änderungen noch an `WorldActionPacket` und `WorldSnapshotPacket` binden. Erst diese Hooks machen die Zustände im Spiel sichtbar:
+
+- Fall öffnen/ändern/lösen sowie Akten- und Pinboard-Verbindungen
+- Bürgerpositionen und Rotationen aus einer einzigen autoritativen Quelle
+- Tür öffnen, schließen, aufsperren, eintreten und klopfen
+- Firmen-Öffnungszeiten aus der synchronisierten Spielzeit
+- Aufzugziel, Transitstatus und Mitfahrt aller Spieler
+- Gegenstände aufnehmen, ablegen, werfen und Objektzustände
+- Zeit und Wetter auf `SessionData` anwenden
+
+Bis diese Hooks ergänzt sind, sind die Pakete und Serverzustände vorhanden, die sichtbare Änderung im Unity-Spiel jedoch noch nicht garantiert.
+
+### Verbindliche Synchronisationsregeln
+
+- Der Dedicated Server vergibt Revisionen und Server-Ticks; Clients verwenden keine lokale Uhr als Weltquelle.
+- Weltaktionen werden mit Entitätstyp, stabiler Entitäts-ID, Aktion und Zustand übertragen.
+- Für reproduzierbare Bürgerpositionen müssen alle Clients dieselbe stabile Citizen-ID verwenden.
+- Snapshots werden beim Join gesendet; Aktionen werden sofort an alle Clients broadcastet.
+- Ein vollständiger Snapshot darf nur vom Host veröffentlicht werden.
+
+---
+
 ## Architektur
 
 ```
@@ -64,15 +103,15 @@ Dieses Projekt entwickelt eine vollständige Multiplayer-Mod für Shadow of Doub
 - Server-Discovery API
 - Status-Updates
 
-### Phase 7: Spielzustands-Synchronisierung ⏳
-- Player-Positionen
-- Interaktionen
-- Zeit/Wetter-Sync
+### Phase 7: Spielzustands-Synchronisierung 🔄
+- Player-Positionen und Rotationen: Protokoll und Relay vorhanden
+- Welt-Snapshot, Revisionen und Aktionen: vorhanden
+- Zeit/Wetter: Pakettransport vorhanden, Unity-Anwendung benötigt Hook
 
-### Phase 8: Multiplayer-Gameplay ⏳
-- Vollständige Synchronisation
-- Fall-Management
-- Voice Chat (optional)
+### Phase 8: Multiplayer-Gameplay 🔄
+- Fall-, Pinboard-, Tür-, Öffnungszeiten-, Aufzug-, Item- und Objekt-Pakete: vorhanden
+- Sichtbare Anwendung in der Spiel-Assembly: noch offen
+- Voice Chat (optional): offen
 
 ---
 
@@ -179,6 +218,8 @@ Paket-Typen:
 - PLAYER_POSITION
 - PLAYER_ACTION
 - GAME_STATE_UPDATE
+- WORLD_ACTION / WORLD_ACTION_BROADCAST
+- WORLD_SNAPSHOT_REQUEST / WORLD_SNAPSHOT
 - PASSWORD_CHALLENGE / PASSWORD_RESPONSE
 ```
 

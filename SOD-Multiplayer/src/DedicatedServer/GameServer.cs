@@ -19,6 +19,13 @@ namespace SOD.Multiplayer.Dedicated
         private bool _hasPassword;
         private string _masterServerUrl;
         private string _serverId;
+        private readonly object _worldStateLock = new();
+        private readonly WorldSnapshotPacket _worldSnapshot = new()
+        {
+            Type = PacketType.WorldSnapshot,
+            Weather = "Clear"
+        };
+        private long _worldRevision;
         
         public const int MAX_PLAYERS = 4;
         
@@ -124,6 +131,7 @@ namespace SOD.Multiplayer.Dedicated
             
             // Send current player list to new player
             await SendPlayerListAsync(client);
+            await client.SendPacketAsync(GetWorldSnapshot());
         }
         
         public void HandlePlayerLeave(ClientConnection client)
@@ -175,6 +183,98 @@ namespace SOD.Multiplayer.Dedicated
                 {
                     await client.SendPacketAsync(packet);
                 }
+            }
+        }
+
+        public async Task HandlePlayerUpdateAsync(ClientConnection client, PlayerUpdatePacket packet)
+        {
+            await BroadcastToOthersAsync(client, new PlayerUpdatePacket
+            {
+                Type = PacketType.PlayerUpdate,
+                SenderId = client.PlayerId,
+                PositionX = packet.PositionX,
+                PositionY = packet.PositionY,
+                PositionZ = packet.PositionZ,
+                RotationX = packet.RotationX,
+                RotationY = packet.RotationY,
+                RotationZ = packet.RotationZ,
+                RotationW = packet.RotationW
+            });
+        }
+
+        public async Task HandleWorldActionAsync(ClientConnection client, WorldActionPacket packet)
+        {
+            WorldActionPacket authoritativeAction;
+            lock (_worldStateLock)
+            {
+                _worldRevision++;
+                _worldSnapshot.Revision = _worldRevision;
+                _worldSnapshot.ServerTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                _worldSnapshot.Entities.RemoveAll(entity =>
+                    entity.EntityType == packet.EntityType && entity.EntityId == packet.EntityId);
+                _worldSnapshot.Entities.Add(new WorldEntityState
+                {
+                    EntityType = packet.EntityType,
+                    EntityId = packet.EntityId,
+                    StateJson = packet.StateJson
+                });
+
+                authoritativeAction = new WorldActionPacket
+                {
+                    Type = PacketType.WorldActionBroadcast,
+                    SenderId = client.PlayerId,
+                    EntityType = packet.EntityType,
+                    EntityId = packet.EntityId,
+                    Action = packet.Action,
+                    StateJson = packet.StateJson,
+                    ClientTick = _worldSnapshot.ServerTick
+                };
+            }
+
+            await BroadcastAsync(authoritativeAction);
+        }
+
+        public async Task HandleWorldSnapshotAsync(ClientConnection client, WorldSnapshotPacket packet)
+        {
+            lock (_worldStateLock)
+            {
+                if (_clients.Count == 0 || _clients[0] != client)
+                    return;
+
+                _worldRevision++;
+                packet.Type = PacketType.WorldSnapshot;
+                packet.Revision = _worldRevision;
+                packet.ServerTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                _worldSnapshot.TimeOfDay = packet.TimeOfDay;
+                _worldSnapshot.Weather = packet.Weather;
+                _worldSnapshot.Entities = packet.Entities ?? new List<WorldEntityState>();
+                _worldSnapshot.Citizens = packet.Citizens ?? new List<CitizenState>();
+                _worldSnapshot.Revision = packet.Revision;
+                _worldSnapshot.ServerTick = packet.ServerTick;
+            }
+
+            await BroadcastAsync(GetWorldSnapshot());
+        }
+
+        public async Task SendWorldSnapshotAsync(ClientConnection client)
+        {
+            await client.SendPacketAsync(GetWorldSnapshot());
+        }
+
+        private WorldSnapshotPacket GetWorldSnapshot()
+        {
+            lock (_worldStateLock)
+            {
+                return new WorldSnapshotPacket
+                {
+                    Type = PacketType.WorldSnapshot,
+                    Revision = _worldSnapshot.Revision,
+                    ServerTick = _worldSnapshot.ServerTick,
+                    TimeOfDay = _worldSnapshot.TimeOfDay,
+                    Weather = _worldSnapshot.Weather,
+                    Entities = new List<WorldEntityState>(_worldSnapshot.Entities),
+                    Citizens = new List<CitizenState>(_worldSnapshot.Citizens)
+                };
             }
         }
         
@@ -346,7 +446,22 @@ namespace SOD.Multiplayer.Dedicated
                         break;
                         
                     case PacketType.PlayerUpdate:
-                        // Handle player position updates
+                        var playerUpdate = JsonConvert.DeserializeObject<PlayerUpdatePacket>(json);
+                        await _server.HandlePlayerUpdateAsync(this, playerUpdate);
+                        break;
+
+                    case PacketType.WorldAction:
+                        var worldAction = JsonConvert.DeserializeObject<WorldActionPacket>(json);
+                        await _server.HandleWorldActionAsync(this, worldAction);
+                        break;
+
+                    case PacketType.WorldSnapshotRequest:
+                        await _server.SendWorldSnapshotAsync(this);
+                        break;
+
+                    case PacketType.WorldSnapshot:
+                        var worldSnapshot = JsonConvert.DeserializeObject<WorldSnapshotPacket>(json);
+                        await _server.HandleWorldSnapshotAsync(this, worldSnapshot);
                         break;
                         
                     case PacketType.ChatMessage:

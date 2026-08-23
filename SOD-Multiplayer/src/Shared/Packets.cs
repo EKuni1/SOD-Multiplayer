@@ -11,6 +11,8 @@ namespace SOD.Multiplayer.Shared
         LeaveRequest = 2,
         PlayerUpdate = 3,
         ChatMessage = 4,
+        WorldAction = 5,
+        WorldSnapshotRequest = 6,
         
         // Server -> Client
         JoinAccepted = 10,
@@ -20,6 +22,8 @@ namespace SOD.Multiplayer.Shared
         PlayerList = 14,
         GameState = 15,
         ChatBroadcast = 16,
+        WorldActionBroadcast = 17,
+        WorldSnapshot = 18,
         
         // Master Server
         ServerRegister = 20,
@@ -60,6 +64,17 @@ namespace SOD.Multiplayer.Shared
         public bool IsHost { get; set; }
     }
 
+    public class PlayerUpdatePacket : Packet
+    {
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+        public float PositionZ { get; set; }
+        public float RotationX { get; set; }
+        public float RotationY { get; set; }
+        public float RotationZ { get; set; }
+        public float RotationW { get; set; } = 1f;
+    }
+
     // Server Info for Master Server
     public class ServerInfo
     {
@@ -80,6 +95,55 @@ namespace SOD.Multiplayer.Shared
         public List<PlayerInfo> Players { get; set; } = new();
         public string TimeOfDay { get; set; } = "12:00";
         public string CurrentMission { get; set; } = "";
+    }
+
+    public enum WorldEntityType
+    {
+        Case,
+        Citizen,
+        Pinboard,
+        Door,
+        Company,
+        Elevator,
+        Item,
+        Object
+    }
+
+    public class WorldActionPacket : Packet
+    {
+        public WorldEntityType EntityType { get; set; }
+        public string EntityId { get; set; } = "";
+        public string Action { get; set; } = "";
+        public string StateJson { get; set; } = "{}";
+        public long ClientTick { get; set; }
+    }
+
+    public class WorldEntityState
+    {
+        public WorldEntityType EntityType { get; set; }
+        public string EntityId { get; set; } = "";
+        public string StateJson { get; set; } = "{}";
+    }
+
+    public class CitizenState : WorldEntityState
+    {
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+        public float PositionZ { get; set; }
+        public float RotationX { get; set; }
+        public float RotationY { get; set; }
+        public float RotationZ { get; set; }
+        public float RotationW { get; set; } = 1f;
+    }
+
+    public class WorldSnapshotPacket : Packet
+    {
+        public long Revision { get; set; }
+        public long ServerTick { get; set; }
+        public string TimeOfDay { get; set; } = "12:00";
+        public string Weather { get; set; } = "Clear";
+        public List<WorldEntityState> Entities { get; set; } = new();
+        public List<CitizenState> Citizens { get; set; } = new();
     }
 
     // Chat

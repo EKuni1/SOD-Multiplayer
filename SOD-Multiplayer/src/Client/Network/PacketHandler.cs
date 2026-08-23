@@ -42,6 +42,18 @@ namespace SOD.Multiplayer.Client.Network
                 case PacketType.GameState:
                     OnGameStateReceived(packet as GameStatePacket);
                     break;
+
+                case PacketType.PlayerUpdate:
+                    OnPlayerUpdateReceived(packet as PlayerUpdatePacket);
+                    break;
+
+                case PacketType.WorldActionBroadcast:
+                    OnWorldActionReceived(packet as WorldActionPacket);
+                    break;
+
+                case PacketType.WorldSnapshot:
+                    OnWorldSnapshotReceived(packet as WorldSnapshotPacket);
+                    break;
                     
                 case PacketType.ChatBroadcast:
                     OnChatMessage(packet as ChatPacket);
@@ -88,6 +100,28 @@ namespace SOD.Multiplayer.Client.Network
         {
             // Update game state based on server data
             UnityEngine.Debug.Log($"[SOD Multiplayer] Game state update: Time={packet.TimeOfDay}");
+        }
+
+        private void OnPlayerUpdateReceived(PlayerUpdatePacket packet)
+        {
+            if (packet == null) return;
+            UnityEngine.Debug.Log($"[SOD Multiplayer] Player {packet.SenderId} position update received");
+            // The Unity player registry applies this on the main thread.
+        }
+
+        private void OnWorldActionReceived(WorldActionPacket packet)
+        {
+            if (packet == null) return;
+            UnityEngine.Debug.Log($"[SOD Multiplayer] {packet.EntityType} {packet.EntityId}: {packet.Action}");
+            // Domain hooks apply the authoritative state to the local scene.
+        }
+
+        private void OnWorldSnapshotReceived(WorldSnapshotPacket packet)
+        {
+            if (packet == null) return;
+            UnityEngine.Debug.Log($"[SOD Multiplayer] World snapshot {packet.Revision} received; weather={packet.Weather}");
+            // Domain hooks replace local case, citizen, pinboard, door, elevator,
+            // item, opening-hours, time, and weather state from this snapshot.
         }
         
         private void OnChatMessage(ChatPacket packet)
