@@ -55,8 +55,18 @@ namespace SOD.Multiplayer.Client.Harmony
             var uiObject = new GameObject("SOD_Multiplayer_UI");
             Object.DontDestroyOnLoad(uiObject);
             
-            // Add the ServerBrowserUI component
-            uiObject.AddComponent<ServerBrowserUI>();
+            // Add Canvas components
+            var canvas = uiObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 1000;
+            
+            uiObject.AddComponent<CanvasScaler>();
+            uiObject.AddComponent<GraphicRaycaster>();
+            
+            // Add the ServerBrowserUI component and initialize it
+            var uiComponent = uiObject.AddComponent<ServerBrowserUI>();
+            uiComponent.Initialize();
+            uiComponent.ToggleVisibility(false); // Start hidden
             
             Debug.Log("[SOD Multiplayer] Multiplayer UI initialized. Press Ctrl+M to toggle.");
         }

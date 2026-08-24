@@ -8,6 +8,9 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath>bin\Release\</OutputPath>
+    
+    <!-- Set your Shadows of Doubt installation path here -->
+    <SODGamePath>E:\Games\Shadows of Doubt</SODGamePath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -3,70 +3,34 @@
 *.dll
 *.exe
 *.pdb
-*.so
-*.dylib
-*.o
-*.obj
-*.a
-*.lib
-*.out
+*.nupkg
+bin/
+obj/
+out/
 
 # Dependencies
 packages/
-lib/
 node_modules/
-bower_components/
+vendor/
 
 # Logs
 *.log
+logs/
 
 # Environment
 .env
 .env.local
-*.env.*
+*.env
 
-# Editor/IDE files
-.vs/
+# Editors
+.vscode/
 .idea/
-*.swp
-*.swo
-*~
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS
 .DS_Store
 Thumbs.db
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-
-# Coverage reports
-coverage/
-htmlcov/
-*.coverage
-
-# Compiled Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Java
-*.class
-*.jar
-*.war
-*.ear
-target/
-.gradle/
-
-# C#
-bin/
-obj/
-*.userprefs
-
-# Distribution / packaging
-dist/
-build/
-*.msi
-*.rpm
-*.deb
 ```
