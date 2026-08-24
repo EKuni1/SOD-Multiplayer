@@ -55,6 +55,22 @@ namespace SOD.Multiplayer.Client.UI
             
             InitializeUI();
         }
+
+        public void Update()
+        {
+            if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.M))
+            {
+                if (_serverBrowserPanel.activeSelf)
+                    Hide();
+                else
+                    Show();
+            }
+
+            if (_serverBrowserPanel.activeSelf && Input.GetKeyDown(KeyCode.Escape))
+                Hide();
+
+            UpdateNetworkState();
+        }
         
         private void InitializeUI()
         {
@@ -241,7 +257,7 @@ namespace SOD.Multiplayer.Client.UI
             _networkClient.Connect(_selectedServerIp, _selectedServerPort);
         }
 
-        public void Update()
+        private void UpdateNetworkState()
         {
             if (_networkClient == null || !_networkClient.IsConnected)
                 return;

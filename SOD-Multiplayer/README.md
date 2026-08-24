@@ -375,6 +375,17 @@ Jede Phase wird separat implementiert, dokumentiert und getestet bevor mit der n
 
 ## Aktueller Stand fuer weitere Entwicklung
 
+### Separates Multiplayer-Menue
+
+Der Serverbrowser wird **nicht** in das originale Hauptmenue eingebaut. Das Plugin erzeugt beim
+Laden ein eigenes, persistentes Unity-Menue. Im Spiel wird es mit `Ctrl+M` geoeffnet oder
+geschlossen; `Escape` schliesst das Menue ebenfalls. Dadurch bleibt das originale Spielmenue
+unangetastet und ein fehlender oder geaenderter `MainMenuController` verhindert nicht mehr den
+Start der Mod.
+
+Der Savegame-Hook ist davon getrennt: Wenn der Host im normalen Spielmenue ein Savegame auswaehlt,
+wird die Auswahl weiterhin an den Dedicated Server gemeldet.
+
 Dieser Abschnitt beschreibt den Code, der aktuell unter `src/` gebaut wird. Die Verzeichnisse
 `Client/Source`, `DedicatedServer/Source` und `MasterServer/Source` enthalten einen aelteren
 Entwurf und duerfen fuer neue Aenderungen nicht als Referenz verwendet werden.

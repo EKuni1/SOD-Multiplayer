@@ -54,6 +54,10 @@
       <HintPath>$(SODGamePath)\BepInEx\interop\UnityEngine.UnityWebRequestModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(SODGamePath)\BepInEx\interop\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(SODGamePath)\BepInEx\interop\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
