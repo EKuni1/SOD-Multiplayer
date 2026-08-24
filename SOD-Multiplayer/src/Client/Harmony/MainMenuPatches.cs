@@ -1,31 +1,64 @@
 using System;
 using HarmonyLib;
-using SOD.Multiplayer.Client.Network;
+using UnityEngine;
+using SOD.Multiplayer.Client.UI;
 
 namespace SOD.Multiplayer.Client.Harmony
 {
-    public static class MainMenuPatches
+    // Patch for the main menu to add Multiplayer button and initialize UI
+    [HarmonyPatch]
+    public class MainMenuPatches
     {
-        public static void Apply(HarmonyLib.Harmony harmony)
+        private static bool _uiInitialized = false;
+        
+        // Find a reliable main menu method to patch
+        // You may need to adjust this based on actual game decompilation
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(UnityEngine.Object), nameof(UnityEngine.Object.FindObjectOfType))]
+        public static void FindObjectOfType_Postfix(System.Type type, UnityEngine.Object __result)
         {
-            var menuType = AccessTools.TypeByName("MainMenuController");
-            var selectSave = menuType == null ? null : AccessTools.Method(menuType, "SelectNewSave");
-            if (selectSave != null)
-                harmony.Patch(selectSave, postfix: new HarmonyMethod(typeof(MainMenuPatches), nameof(SelectNewSave_Postfix)));
-            MultiplayerMod.Instance?.Log.LogInfo("Separate Multiplayer-Menue aktiv: Ctrl+M");
+            // This is a fallback - we'll use a more direct approach below
         }
-
-        private static void SelectNewSave_Postfix(object __0)
+        
+        // Alternative: Patch any Canvas creation in the game
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Canvas), nameof(Canvas.Awake))]
+        public static void Canvas_Awake_Postfix(Canvas __instance)
         {
-            if (NetworkClient.Active == null || __0 == null)
-                return;
-
-            var info = __0.GetType().GetField("info")?.GetValue(__0) as System.IO.FileInfo;
-            if (info == null)
-                return;
-
-            NetworkClient.Active.SendSessionSelected(info.FullName, "");
-            MultiplayerMod.Instance?.Log.LogInfo($"Savegame an Server gemeldet: {info.Name}");
+            if (_uiInitialized) return;
+            
+            // Check if this looks like a main menu canvas
+            if (__instance.gameObject.name.Contains("Menu") || __instance.gameObject.name.Contains("UI"))
+            {
+                InitializeMultiplayerUI();
+                _uiInitialized = true;
+            }
+        }
+        
+        // More reliable: Just initialize on first update
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(Time), nameof(Time.time), MethodType.Getter)]
+        public static void Time_get_time_Prefix()
+        {
+            if (!_uiInitialized && Application.isFocused)
+            {
+                InitializeMultiplayerUI();
+                _uiInitialized = true;
+            }
+        }
+        
+        private static void InitializeMultiplayerUI()
+        {
+            Debug.Log("[SOD Multiplayer] Initializing Multiplayer UI...");
+            
+            // Create a GameObject to hold our UI component
+            var uiObject = new GameObject("SOD_Multiplayer_UI");
+            Object.DontDestroyOnLoad(uiObject);
+            
+            // Add the ServerBrowserUI component
+            uiObject.AddComponent<ServerBrowserUI>();
+            
+            Debug.Log("[SOD Multiplayer] Multiplayer UI initialized. Press Ctrl+M to toggle.");
         }
     }
 }

@@ -3,8 +3,7 @@ using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using UnityEngine;
-using SOD.Multiplayer.Client.Harmony;
-using SOD.Multiplayer.Client.UI;
+using System.Reflection;
 
 namespace SOD.Multiplayer.Client
 {
@@ -38,26 +37,28 @@ namespace SOD.Multiplayer.Client
                 "change-this-token",
                 "Authentifizierungs-Token des Master Servers.").Value;
             
+            Log.LogInfo("===========================================");
             Log.LogInfo("Shadows of Doubt Multiplayer Mod loaded!");
-            Log.LogInfo($"Master Server URL: {MasterServerUrl}");
-
-            ClassInjector.RegisterTypeInIl2Cpp<ServerBrowserUI>();
-            ClassInjector.RegisterTypeInIl2Cpp<ServerSelectData>();
-            ClassInjector.RegisterTypeInIl2Cpp<RuntimeDiagnostics>();
-            ClassInjector.RegisterTypeInIl2Cpp<MultiplayerRuntime>();
-            RuntimeDiagnostics.Start();
-
-            var runtimeObject = new GameObject("SOD Multiplayer Runtime");
-            UnityEngine.Object.DontDestroyOnLoad(runtimeObject);
-            var runtime = runtimeObject.AddComponent<MultiplayerRuntime>();
-            Log.LogInfo("Separates Multiplayer-Fenster erstellt. Tastenkombination: Ctrl+M");
+            Log.LogInfo("Version: 1.0.0");
+            Log.LogInfo("Controls: Press CTRL+M to open Server Browser");
+            Log.LogInfo("===========================================");
             
             // Initialize Harmony
-            HarmonyInstance = new HarmonyLib.Harmony("com.sod.multiplayer");
-            HarmonyInstance.PatchAll();
-            MainMenuPatches.Apply(HarmonyInstance);
+            HarmonyInstance = new Harmony("com.sod.multiplayer");
             
-            Log.LogInfo("Harmony patches applied successfully.");
+            try
+            {
+                HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                Log.LogInfo("Harmony patches applied successfully.");
+            }
+            catch (System.Exception ex)
+            {
+                Log.LogError($"Failed to apply Harmony patches: {ex.Message}");
+                Log.LogError($"Stack trace: {ex.StackTrace}");
+            }
+            
+            Log.LogInfo("Multiplayer Mod initialization complete.");
+            Log.LogInfo("The UI will be initialized when the game's main menu loads.");
         }
     }
 }

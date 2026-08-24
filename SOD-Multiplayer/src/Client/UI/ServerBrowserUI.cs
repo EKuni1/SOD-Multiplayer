@@ -38,8 +38,11 @@ namespace SOD.Multiplayer.Client.UI
         private TextMeshProUGUI _chatOutput;
         private TMP_InputField _chatInput;
         
-        // Master Server URL
-        private string _masterServerUrl = "http://192.168.178.76:5000";
+        // Master Server URL - configure this!
+        private string _masterServerUrl = "http://localhost:5000";
+        
+        // Keyboard shortcut handling
+        private bool _ctrlPressed = false;
         
         public void Awake()
         {
@@ -54,26 +57,44 @@ namespace SOD.Multiplayer.Client.UI
             _masterServerUrl = MultiplayerMod.MasterServerUrl ?? _masterServerUrl;
             
             InitializeUI();
-            MultiplayerMod.Instance?.Log.LogInfo("ServerBrowserUI bereit. Ctrl+M oeffnet das separate Menue.");
+            
+            Debug.Log("[SOD Multiplayer] ServerBrowserUI initialized. Press CTRL+M to toggle.");
         }
-
-        public void ToggleMenu()
+        
+        private void Update()
+        {
+            // Handle Ctrl+M keyboard shortcut
+            if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+            {
+                _ctrlPressed = true;
+            }
+            else if (_ctrlPressed && Input.GetKeyDown(KeyCode.M))
+            {
+                ToggleUI();
+                _ctrlPressed = false;
+            }
+        }
+        
+        public void ToggleUI()
         {
             if (_serverBrowserPanel == null)
+            {
+                Debug.LogWarning("[SOD Multiplayer] UI not initialized yet!");
                 return;
-
-            if (_serverBrowserPanel.activeSelf)
-                Hide();
+            }
+            
+            bool newState = !_serverBrowserPanel.activeSelf;
+            _serverBrowserPanel.SetActive(newState);
+            
+            if (newState)
+            {
+                RefreshServerList();
+                Debug.Log("[SOD Multiplayer] Server Browser opened.");
+            }
             else
-                Show();
-        }
-
-        public void Update()
-        {
-            if (_serverBrowserPanel != null && _serverBrowserPanel.activeSelf && Input.GetKeyDown(KeyCode.Escape))
-                Hide();
-
-            UpdateNetworkState();
+            {
+                Debug.Log("[SOD Multiplayer] Server Browser closed.");
+            }
         }
         
         private void InitializeUI()
@@ -85,6 +106,7 @@ namespace SOD.Multiplayer.Client.UI
             
             var canvas = _serverBrowserPanel.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 1000; // Ensure it's on top
             
             // Add background
             var bg = _serverBrowserPanel.AddComponent<Image>();
@@ -108,8 +130,8 @@ namespace SOD.Multiplayer.Client.UI
                 new Vector2(0, -170), new Vector2(120, 40), () => OnJoinClicked());
             
             // Create close button
-            CreateButton(_serverBrowserPanel.transform, "CloseBtn", "CLOSE", 
-                new Vector2(150, -170), new Vector2(120, 40), () => OnCloseClicked());
+            CreateButton(_serverBrowserPanel.transform, "CloseBtn", "CLOSE (Ctrl+M)", 
+                new Vector2(150, -170), new Vector2(120, 40), OnCloseClicked);
             
             // Create password input (hidden by default)
             _passwordInput = CreateInputField(_serverBrowserPanel.transform, "PasswordInput", 
@@ -119,10 +141,10 @@ namespace SOD.Multiplayer.Client.UI
             _chatOutput = CreateLabel(_serverBrowserPanel.transform, "Chat", "", 
                 new Vector2(0, -270), new Vector2(380, 40), 12, Color.white).GetComponent<TextMeshProUGUI>();
             
+            // Start with panel HIDDEN - will be shown with Ctrl+M
             _serverBrowserPanel.SetActive(false);
             
-            UnityEngine.Debug.Log("[SOD Multiplayer] Server Browser UI initialized");
-            MultiplayerMod.Instance?.Log.LogInfo("ServerBrowserUI: Canvas und Panel erfolgreich erstellt.");
+            Debug.Log("[SOD Multiplayer] Server Browser UI created. Press CTRL+M to open.");
         }
         
         public void Show()
