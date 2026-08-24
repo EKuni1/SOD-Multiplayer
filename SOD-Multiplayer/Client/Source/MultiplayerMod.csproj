@@ -1,0 +1,89 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SOD_Multiplayer</RootNamespace>
+    
+    <!-- BepInEx Plugin Einstellungen -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\Release\</OutputPath>
+    <LangVersion>10.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- HINWEIS: Diese Pfade musst du an deine Shadows of Doubt Installation anpassen -->
+    <!-- Game Path: E:\Games\Shadows of Doubt -->
+    
+    <!-- BepInEx Core -->
+    <Reference Include="BepInEx.Core">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\core\BepInEx.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="BepInEx.IL2CPP">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\core\BepInEx.IL2CPP.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="0Harmony">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity Assemblies aus dem Spiel -->
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>E:\Games\Shadows of Doubt\MelonLoader\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="UnityEngine.UI">
+      <HintPath>E:\Games\Shadows of Doubt\MelonLoader\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>E:\Games\Shadows of Doubt\MelonLoader\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="UnityEngine.TextMeshProModule">
+      <HintPath>E:\Games\Shadows of Doubt\MelonLoader\Managed\UnityEngine.TextMeshProModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>E:\Games\Shadows of Doubt\MelonLoader\Managed\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>E:\Games\Shadows of Doubt\MelonLoader\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Haupt-Assembly des Spiels (enthält SessionData, MainMenu, etc.) -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>E:\Games\Shadows of Doubt\MelonLoader\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <!-- Il2Cpp Interop -->
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
+    <Reference Include="Il2CppInterop.Generator">
+      <HintPath>E:\Games\Shadows of Doubt\BepInEx\core\Il2CppInterop.Generator.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
