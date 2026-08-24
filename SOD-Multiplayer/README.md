@@ -1,329 +1,238 @@
-# Shadow of Doubt - Multiplayer Mod Projekt
+# Shadows of Doubt Multiplayer Mod
 
-## Übersicht
+A complete multiplayer modification for Shadows of Doubt enabling up to 4 players to play together.
 
-Dieses Projekt entwickelt eine vollständige Multiplayer-Mod für Shadow of Doubt mit drei Komponenten:
-
-1. **Client-Mod** - BepInEx/Harmony Mod für lokale Spielinstallation
-2. **Dedicated Server** - Linux-Server-Anwendung für Multiplayer-Sessions (max. 4 Spieler)
-3. **Master Server** - Zentrale Serverliste für Server-Discovery
-
----
-
-## Architektur
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SHADOW OF DOUBT MULTIPLAYER                  │
-└─────────────────────────────────────────────────────────────────┘
-
-┌──────────────┐         ┌──────────────────┐         ┌──────────────┐
-│  Client Mod  │◄───────►│  Dedicated Server │◄───────►│ Master Server│
-│  (BepInEx)   │  UDP    │  (Linux, Headless)│  HTTP   │  (Registry)  │
-│              │  TCP    │                  │  REST   │              │
-└──────────────┘         └──────────────────┘         └──────────────┘
-     │                          │                          │
-     │ - Server Browser         │ - Lobby Management       │ - Server List
-     │ - Player Sync            │ - Player Management      │ - Discovery API
-     │ - Game State Sync        │ - Max 4 Players          │ - Heartbeats
-     │ - Harmony Patches        │ - Password Protection    │
-     │                          │ - Game Session Logic     │
-```
-
----
-
-## Entwicklungsphasen
-
-### Phase 1: Grundlegende Netzwerkverbindung ✅
-- Client ↔ Dedicated Server Kommunikation
-- Basis-Netzwerkprotokoll (UDP/TCP)
-- Verbindungsaufbau und -abbau
-
-### Phase 2: Spieler verbinden/trennen ✅
-- Join/Leave-System
-- Spieler-Identifikation
-- Connection-Handshake
-
-### Phase 3: 4-Spieler-Limit ⏳
-- Spielerzähler im Dedicated Server
-- Ablehnung bei vollem Server
-- UI-Anzeige der Spielerzahl
-
-### Phase 4: Serverinformationen und Serverliste ⏳
-- Master Server Registry
-- Server-Browser UI
-- Heartbeat-System
-
-### Phase 5: Passwortschutz ⏳
-- Passwort-Hashing (SHA-256)
-- Passwort-Abfrage im Client
-- Zugriffskontrolle
-
-### Phase 6: Master-Server Integration ⏳
-- Server-Registrierung
-- Server-Discovery API
-- Status-Updates
-
-### Phase 7: Spielzustands-Synchronisierung ⏳
-- Player-Positionen
-- Interaktionen
-- Zeit/Wetter-Sync
-
-### Phase 8: Multiplayer-Gameplay ⏳
-- Vollständige Synchronisation
-- Fall-Management
-- Voice Chat (optional)
-
----
-
-## Verzeichnisstruktur
+## Project Structure
 
 ```
 SOD-Multiplayer/
-├── Client/
-│   ├── Source/
-│   │   ├── MultiplayerMod.cs          # Hauptmod-Klasse (BepInEx)
-│   │   ├── Network/
-│   │   │   ├── NetworkClient.cs       # Netzwerk-Client
-│   │   │   ├── PacketHandler.cs       # Paketverarbeitung
-│   │   │   └── Protocol.cs            # Protokoll-Definitionen
-│   │   ├── UI/
-│   │   │   ├── ServerBrowserUI.cs     # Server-Browser Oberfläche
-│   │   │   ├── ServerEntryUI.cs       # Server-Eintrag UI
-│   │   │   └── PasswordDialog.cs      # Passwort-Dialog
-│   │   ├── Harmony/
-│   │   │   ├── MainMenuPatches.cs     # Hauptmenü-Patches
-│   │   │   ├── SessionPatches.cs      # Session-Patches
-│   │   │   └── PlayerPatches.cs       # Player-Patches
-│   │   └── Sync/
-│   │       ├── PlayerSync.cs          # Spieler-Synchronisation
-│   │       └── GameStateSync.cs       # Spielzustand-Sync
-│   └── Plugins/
-│       └── (BepInEx Dependencies)
-│
-├── DedicatedServer/
-│   ├── Source/
-│   │   ├── Program.cs                 # Entry Point
-│   │   ├── Server/
-│   │   │   ├── GameServer.cs          # Hauptserver-Klasse
-│   │   │   ├── LobbyManager.cs        # Lobby-Verwaltung
-│   │   │   ├── PlayerManager.cs       # Spieler-Verwaltung (max 4)
-│   │   │   └── SessionManager.cs      # Session-Logik
-│   │   ├── Network/
-│   │   │   ├── NetworkServer.cs       # Netzwerk-Server
-│   │   │   ├── PacketHandler.cs       # Paketverarbeitung
-│   │   │   └── Protocol.cs            # Protokoll-Definitionen
-│   │   └── Master/
-│   │       └── MasterClient.cs        # Master-Server Client
-│   ├── Bin/
-│   │   └── (Kompilierte Binaries)
-│   └── Config/
-│       └── server.cfg                 # Server-Konfiguration
-│
-├── MasterServer/
-│   ├── Source/
-│   │   ├── Program.cs                 # Entry Point
-│   │   ├── ServerListManager.cs       # Serverlisten-Manager
-│   │   ├── API/
-│   │   │   └── RestAPI.cs             # REST API Endpoints
-│   │   └── Models/
-│   │       └── ServerInfo.cs          # Server-Info Modell
-│   ├── Bin/
-│   │   └── (Kompilierte Binaries)
-│   └── Config/
-│       └── master.cfg                 # Master-Server Konfiguration
-│
-├── Docs/
-│   ├── PROTOCOL.md                    # Netzwerkprotokoll-Doku
-│   ├── API.md                         # Master-Server API
-│   └── INSTALLATION.md                # Installationsanleitung
-│
-└── Config/
-    ├── sod-dedicated.service          # systemd Service (Dedicated)
-    ├── sod-master.service             # systemd Service (Master)
-    └── build.sh                       # Build-Skript
+├── src/
+│   ├── Client/           # BepInEx mod for game clients
+│   ├── DedicatedServer/  # Linux game server
+│   ├── MasterServer/     # Server list/master server
+│   └── Shared/           # Shared packet definitions
+└── README.md
 ```
 
----
+## Components
 
-## Abhängigkeiten
+### 1. Client Mod
+- BepInEx plugin installed in your Shadows of Doubt game folder
+- Adds multiplayer UI (Server Browser)
+- Handles network communication with dedicated servers
+- **Controls: Press CTRL+M to open/close the Server Browser**
 
-### Client-Mod
-- **BepInEx** (Unity Modding Framework)
-- **HarmonyX** (Method-Hooking)
-- **Il2CppInterop** (IL2CPP Unterstützung)
-- **Newtonsoft.Json** (JSON Serialisierung)
+### 2. Dedicated Server
+- Standalone Linux application
+- Runs the game simulation
+- Supports up to 4 players per server
+- Can be password protected
 
-### Dedicated Server
-- **.NET 8.0 Runtime**
-- **Newtonsoft.Json** (JSON Serialisierung)
+### 3. Master Server
+- Central server list service
+- Game servers register here
+- Clients fetch server lists from here
+- REST API on port 5000
 
-### Master Server
-- **.NET 8.0 Runtime**
-- **Microsoft.AspNetCore** (REST API)
-- **Newtonsoft.Json** (JSON Serialisierung)
+## Prerequisites
 
----
+### For Building Client Mod:
+1. **.NET 6.0 SDK** or higher
+2. **Shadows of Doubt** installed (Steam version)
+3. **BepInEx IL2CPP** installed in your game folder
+4. Path to game: `E:\Games\Shadows of Doubt` (or update Directory.Build.props)
 
-## Netzwerkprotokoll
+### For Running Servers:
+1. **.NET 6.0 Runtime** (Linux x64)
+2. Linux server with open ports (7777 for game, 5000 for master)
 
-### Client ↔ Dedicated Server (UDP/TCP)
-```
-Port: 27015 (Standard)
-Protokoll: UDP für Game-Daten, TCP für zuverlässige Daten
+## Building
 
-Paket-Typen:
-- CONNECT_REQUEST / CONNECT_RESPONSE
-- DISCONNECT
-- PLAYER_JOIN / PLAYER_LEAVE
-- PLAYER_POSITION
-- PLAYER_ACTION
-- GAME_STATE_UPDATE
-- PASSWORD_CHALLENGE / PASSWORD_RESPONSE
-```
+### Step 1: Configure Game Path
 
-### Dedicated Server ↔ Master Server (HTTP REST)
-```
-Port: 27016 (Standard)
+Edit `src/Directory.Build.props` with your actual game path:
 
-Endpoints:
-POST   /api/servers/register     - Server registrieren
-DELETE /api/servers/{id}         - Server deregistrieren
-PUT    /api/servers/{id}/heartbeat - Heartbeat senden
-GET    /api/servers              - Serverliste abrufen
+```xml
+<Project>
+  <PropertyGroup>
+    <SODGamePath>E:\Games\Shadows of Doubt</SODGamePath>
+  </PropertyGroup>
+</Project>
 ```
 
----
+**Important:** The following files must exist in your game folder:
+- `BepInEx/core/BepInEx.Core.dll`
+- `BepInEx/core/0Harmony.dll`
+- `MelonLoader/Managed/UnityEngine.CoreModule.dll`
+- `MelonLoader/Managed/UnityEngine.UI.dll`
+- `MelonLoader/Managed/Unity.TextMeshPro.dll`
+- `MelonLoader/Managed/Assembly-CSharp.dll`
 
-## Kompilierung
+### Step 2: Build Client Mod
 
-### Client-Mod
 ```bash
-cd Client/Source
-dotnet build -c Release
-# Output: Client/Bin/MultiplayerMod.dll
-# Installieren nach: <SOD-Install>/BepInEx/plugins/
+cd SOD-Multiplayer/src
+
+# Build Shared library first
+dotnet build Shared/SOD.Multiplayer.Shared.csproj -c Release
+
+# Build Client Mod
+dotnet build Client/MultiplayerMod.csproj -c Release
 ```
 
-### Dedicated Server
+### Step 3: Install Client Mod
+
+Copy the built DLL to your BepInEx plugins folder:
+
 ```bash
-cd DedicatedServer/Source
-dotnet publish -c Release -r linux-x64 --self-contained
-# Output: DedicatedServer/Bin/
+# Windows example
+copy "Client\bin\Release\net6.0\SOD.Multiplayer.Client.dll" "E:\Games\Shadows of Doubt\BepInEx\plugins\"
 ```
 
-### Master Server
+### Step 4: Build Servers (Linux)
+
 ```bash
-cd MasterServer/Source
-dotnet publish -c Release -r linux-x64 --self-contained
-# Output: MasterServer/Bin/
+cd SOD-Multiplayer/src
+
+# Build Dedicated Server
+dotnet publish DedicatedServer/SOD.Multiplayer.Dedicated.csproj \
+  -c Release \
+  -r linux-x64 \
+  --self-contained true \
+  -o ./publish/DedicatedServer
+
+# Build Master Server
+dotnet publish MasterServer/SOD.Multiplayer.Master.csproj \
+  -c Release \
+  -r linux-x64 \
+  --self-contained true \
+  -o ./publish/MasterServer
 ```
 
----
+## Running
 
-## Installation
+### Starting Master Server (Linux)
 
-### Client-Mod
-1. BepInEx für Shadow of Doubt installieren
-2. `MultiplayerMod.dll` nach `<SOD>/BepInEx/plugins/` kopieren
-3. Spiel starten, neuer "MULTIPLAYER" Button im Hauptmenü
-
-### Dedicated Server (Linux)
 ```bash
-# Systemd Service installieren
-sudo cp Config/sod-dedicated.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable sod-dedicated
-sudo systemctl start sod-dedicated
+cd /path/to/publish/MasterServer
+export MASTER_PORT=5000
+./SOD.Multiplayer.Master
 ```
 
-### Master Server (Linux)
-```bash
-# Systemd Service installieren
-sudo cp Config/sod-master.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable sod-master
-sudo systemctl start sod-master
-```
+The master server will listen on `http://0.0.0.0:5000`
 
----
+### Starting Dedicated Server (Linux)
 
-## Konfiguration
+Create a config file `server_config.json`:
 
-### Dedicated Server (server.cfg)
 ```json
 {
-  "serverName": "My SOD Server",
-  "maxPlayers": 4,
-  "port": 27015,
-  "password": "", // Leer = kein Passwort
-  "masterServerUrl": "http://localhost:27016",
-  "region": "EU"
+  "ServerName": "My SOD Server",
+  "Port": 7777,
+  "MaxPlayers": 4,
+  "Password": "",
+  "MasterServerUrl": "http://your-master-server-ip:5000"
 }
 ```
 
-### Master Server (master.cfg)
+Then run:
+
+```bash
+cd /path/to/publish/DedicatedServer
+./SOD.Multiplayer.Dedicated
+```
+
+### Playing the Game
+
+1. Start Shadows of Doubt with BepInEx
+2. Wait for the main menu to load
+3. Watch for log messages: `[SOD Multiplayer] ServerBrowserUI initialized. Press CTRL+M to toggle.`
+4. **Press CTRL+M** to open the Server Browser
+5. Click "REFRESH LIST" to fetch servers from master server
+6. Select a server and click "JOIN SERVER"
+7. If password protected, enter the password
+
+## Troubleshooting
+
+### UI doesn't appear / CTRL+M doesn't work
+
+1. Check BepInEx log file: `E:\Games\Shadows of Doubt\BepInEx\LogOutput.log`
+2. Look for lines containing "[SOD Multiplayer]"
+3. Verify all Harmony patches applied successfully
+4. Make sure you're pressing both CTRL and M together
+5. Try Left CTRL or Right CTRL
+
+### Build errors about missing assemblies
+
+Ensure your game path is correct in `Directory.Build.props` and these files exist:
+- `$(SODGamePath)\BepInEx\core\BepInEx.Core.dll`
+- `$(SODGamePath)\BepInEx\core\0Harmony.dll`
+- `$(SODGamePath)\MelonLoader\Managed\UnityEngine.CoreModule.dll`
+- `$(SODGamePath)\MelonLoader\Managed\Assembly-CSharp.dll`
+
+If using BepInEx 6.x (IL2CPP), paths might be different. Adjust accordingly.
+
+### Cannot connect to server
+
+1. Verify master server is running: `curl http://localhost:5000/api/servers`
+2. Check firewall settings (ports 5000 and 7777)
+3. Ensure dedicated server registered with master server
+4. Check server logs for connection errors
+
+### Server not showing in list
+
+1. Verify dedicated server sent registration to master server
+2. Check master server logs for registration
+3. Ensure heartbeat interval is working (every 10 seconds)
+4. Server may be removed if no heartbeat for 30 seconds
+
+## Network Ports
+
+| Component | Port | Protocol |
+|-----------|------|----------|
+| Master Server API | 5000 | HTTP/TCP |
+| Dedicated Server | 7777 | TCP |
+
+## Configuration
+
+### Master Server Environment Variables
+
+- `MASTER_PORT` (default: 5000) - API port
+- `SERVER_TIMEOUT_SECONDS` (default: 30) - Remove servers without heartbeat
+
+### Dedicated Server Config (server_config.json)
+
 ```json
 {
-  "port": 27016,
-  "heartbeatTimeout": 30,
-  "region": "EU"
+  "ServerName": "My Server",
+  "Port": 7777,
+  "MaxPlayers": 4,
+  "Password": "optional_password",
+  "MasterServerUrl": "http://master-ip:5000"
 }
 ```
 
----
+## Development Phases
 
-## Testing
+Current Status: **Phase 4 Complete**
 
-### Unit Tests
-```bash
-cd DedicatedServer/Source
-dotnet test
+- ✅ Phase 1: Basic network connection
+- ✅ Phase 2: Player connect/disconnect
+- ✅ Phase 3: 4-player limit enforcement
+- ✅ Phase 4: Server browser & master server
+- ✅ Phase 5: Password protection
+- ⏳ Phase 6: Game state synchronization
+- ⏳ Phase 7: Multiplayer gameplay
 
-cd MasterServer/Source
-dotnet test
-```
+## License
 
-### Integration Tests
-1. Master Server starten
-2. Dedicated Server starten (registriert sich automatisch)
-3. Client mit Mod starten
-4. Server-Browser öffnen, Server sollte sichtbar sein
-5. Verbindung testen (mit/ohne Passwort)
+This project is for educational purposes. Respect the game developers' terms of service.
 
----
+## Support
 
-## Wichtige Klassen aus SOD-Assembly
+Check logs in:
+- Client: `E:\Games\Shadows of Doubt\BepInEx\LogOutput.log`
+- Dedicated Server: Console output / syslog
+- Master Server: Console output / syslog
 
-Basierend auf der Analyse der bereitgestellten Assembly:
-
-### SessionData.cs
-- `SessionData.Instance` - Singleton Zugriff
-- `SetEnablePause(bool)` - Pause-Steuerung
-- `SetGameTime(...)` - Zeit-Synchronisation
-- `SetWeather(...)` - Wetter-Synchronisation
-- Events: `OnPauseChange`, `OnWeatherChange`, `OnHourChange`
-
-### Weitere relevante Klassen (zu analysieren)
-- `Actor.cs` - Spieler/NPC Darstellung
-- `ActionController.cs` - Aktionen/Interaktionen
-- `Interactable.cs` - Interaktive Objekte
-- `CitySaveData.cs` - Spielwelt-Daten
-
----
-
-## Hinweise zur Entwicklung
-
-1. **Kein Zugriff auf das Spiel**: Die AI kann die Assembly nur analysieren, nicht ausführen
-2. **Harmony-Patches**: Müssen sorgfältig getestet werden im echten Spiel
-3. **IL2CPP**: Shadow of Doubt verwendet IL2CPP, Il2CppInterop erforderlich
-4. **Netzwerk**: UDP für Echtzeit-Daten, TCP für zuverlässige Übertragung
-5. **Sicherheit**: Passwörter immer gehasht übertragen (SHA-256)
-
----
-
-## Nächste Schritte
-
-Beginnend mit **Phase 1**: Grundlegende Netzwerkverbindung zwischen Client und Dedicated Server.
-
-Jede Phase wird separat implementiert, dokumentiert und getestet bevor mit der nächsten fortgefahren wird.
+Look for `[SOD Multiplayer]` prefix in logs.

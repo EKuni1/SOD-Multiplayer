@@ -23,8 +23,11 @@ namespace SOD.Multiplayer.Client.UI
         private NetworkClient _networkClient;
         private PacketHandler _packetHandler;
         
-        // Master Server URL
+        // Master Server URL - configure this!
         private string _masterServerUrl = "http://localhost:5000";
+        
+        // Keyboard shortcut handling
+        private bool _ctrlPressed = false;
         
         public void Awake()
         {
@@ -38,6 +41,44 @@ namespace SOD.Multiplayer.Client.UI
             DontDestroyOnLoad(gameObject);
             
             InitializeUI();
+            
+            Debug.Log("[SOD Multiplayer] ServerBrowserUI initialized. Press CTRL+M to toggle.");
+        }
+        
+        private void Update()
+        {
+            // Handle Ctrl+M keyboard shortcut
+            if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+            {
+                _ctrlPressed = true;
+            }
+            else if (_ctrlPressed && Input.GetKeyDown(KeyCode.M))
+            {
+                ToggleUI();
+                _ctrlPressed = false;
+            }
+        }
+        
+        public void ToggleUI()
+        {
+            if (_serverBrowserPanel == null)
+            {
+                Debug.LogWarning("[SOD Multiplayer] UI not initialized yet!");
+                return;
+            }
+            
+            bool newState = !_serverBrowserPanel.activeSelf;
+            _serverBrowserPanel.SetActive(newState);
+            
+            if (newState)
+            {
+                RefreshServerList();
+                Debug.Log("[SOD Multiplayer] Server Browser opened.");
+            }
+            else
+            {
+                Debug.Log("[SOD Multiplayer] Server Browser closed.");
+            }
         }
         
         private void InitializeUI()
@@ -49,6 +90,7 @@ namespace SOD.Multiplayer.Client.UI
             
             var canvas = _serverBrowserPanel.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 1000; // Ensure it's on top
             
             // Add background
             var bg = _serverBrowserPanel.AddComponent<Image>();
@@ -72,7 +114,7 @@ namespace SOD.Multiplayer.Client.UI
                 new Vector2(0, -170), new Vector2(120, 40), OnJoinClicked);
             
             // Create close button
-            CreateButton(_serverBrowserPanel.transform, "CloseBtn", "CLOSE", 
+            CreateButton(_serverBrowserPanel.transform, "CloseBtn", "CLOSE (Ctrl+M)", 
                 new Vector2(150, -170), new Vector2(120, 40), OnCloseClicked);
             
             // Create password input (hidden by default)
@@ -80,9 +122,10 @@ namespace SOD.Multiplayer.Client.UI
                 "Enter Password", new Vector2(0, -230), new Vector2(200, 30));
             _passwordInput.gameObject.SetActive(false);
             
+            // Start with panel HIDDEN - will be shown with Ctrl+M
             _serverBrowserPanel.SetActive(false);
             
-            UnityEngine.Debug.Log("[SOD Multiplayer] Server Browser UI initialized");
+            Debug.Log("[SOD Multiplayer] Server Browser UI created. Press CTRL+M to open.");
         }
         
         public void Show()
