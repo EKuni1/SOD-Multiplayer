@@ -54,19 +54,23 @@ namespace SOD.Multiplayer.Client.UI
             _masterServerUrl = MultiplayerMod.MasterServerUrl ?? _masterServerUrl;
             
             InitializeUI();
+            MultiplayerMod.Instance?.Log.LogInfo("ServerBrowserUI bereit. Ctrl+M oeffnet das separate Menue.");
         }
 
-        public void Update()
+        public void ToggleMenu()
         {
-            if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.M))
-            {
-                if (_serverBrowserPanel.activeSelf)
-                    Hide();
-                else
-                    Show();
-            }
+            if (_serverBrowserPanel == null)
+                return;
 
-            if (_serverBrowserPanel.activeSelf && Input.GetKeyDown(KeyCode.Escape))
+            if (_serverBrowserPanel.activeSelf)
+                Hide();
+            else
+                Show();
+        }
+
+        private void Update()
+        {
+            if (_serverBrowserPanel != null && _serverBrowserPanel.activeSelf && Input.GetKeyDown(KeyCode.Escape))
                 Hide();
 
             UpdateNetworkState();
@@ -118,6 +122,7 @@ namespace SOD.Multiplayer.Client.UI
             _serverBrowserPanel.SetActive(false);
             
             UnityEngine.Debug.Log("[SOD Multiplayer] Server Browser UI initialized");
+            MultiplayerMod.Instance?.Log.LogInfo("ServerBrowserUI: Canvas und Panel erfolgreich erstellt.");
         }
         
         public void Show()

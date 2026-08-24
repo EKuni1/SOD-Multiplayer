@@ -44,11 +44,14 @@ namespace SOD.Multiplayer.Client
             ClassInjector.RegisterTypeInIl2Cpp<ServerBrowserUI>();
             ClassInjector.RegisterTypeInIl2Cpp<ServerSelectData>();
             ClassInjector.RegisterTypeInIl2Cpp<RuntimeDiagnostics>();
+            ClassInjector.RegisterTypeInIl2Cpp<MultiplayerRuntime>();
             RuntimeDiagnostics.Start();
 
-            var browserObject = new GameObject("SOD Multiplayer Browser");
-            UnityEngine.Object.DontDestroyOnLoad(browserObject);
-            browserObject.AddComponent<ServerBrowserUI>();
+            var runtimeObject = new GameObject("SOD Multiplayer Runtime");
+            UnityEngine.Object.DontDestroyOnLoad(runtimeObject);
+            var browser = runtimeObject.AddComponent<ServerBrowserUI>();
+            var runtime = runtimeObject.AddComponent<MultiplayerRuntime>();
+            runtime.SetBrowser(browser);
             
             // Initialize Harmony
             HarmonyInstance = new HarmonyLib.Harmony("com.sod.multiplayer");
