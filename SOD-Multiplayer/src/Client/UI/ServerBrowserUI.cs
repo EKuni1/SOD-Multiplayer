@@ -51,6 +51,17 @@ namespace SOD.Multiplayer.Client.UI
             InitializeUI();
             _initialized = true;
         }
+
+        public void Show()
+        {
+            Initialize();
+            ToggleVisibility(true);
+        }
+
+        public void Hide()
+        {
+            ToggleVisibility(false);
+        }
         
         public void Awake()
         {

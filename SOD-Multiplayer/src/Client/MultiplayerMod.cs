@@ -3,6 +3,8 @@ using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using UnityEngine;
+using System.Reflection;
+using SOD.Multiplayer.Client.Harmony;
 using SOD.Multiplayer.Client.UI;
 
 namespace SOD.Multiplayer.Client
@@ -56,7 +58,7 @@ namespace SOD.Multiplayer.Client
             
             try
             {
-                HarmonyInstance.PatchAll();
+                HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
                 Log.LogInfo("Harmony patches applied successfully.");
             }
             catch (System.Exception ex)
