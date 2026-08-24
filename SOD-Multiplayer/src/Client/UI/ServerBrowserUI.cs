@@ -28,6 +28,16 @@ namespace SOD.Multiplayer.Client.UI
         
         // Keyboard shortcut handling
         private bool _ctrlPressed = false;
+        private bool _initialized = false;
+        
+        public void Initialize()
+        {
+            if (_initialized) return;
+            
+            Debug.Log("[SOD Multiplayer] Initializing Server Browser UI...");
+            InitializeUI();
+            _initialized = true;
+        }
         
         public void Awake()
         {
@@ -40,9 +50,8 @@ namespace SOD.Multiplayer.Client.UI
             _instance = this;
             DontDestroyOnLoad(gameObject);
             
-            InitializeUI();
-            
-            Debug.Log("[SOD Multiplayer] ServerBrowserUI initialized. Press CTRL+M to toggle.");
+            // Don't initialize here - wait for explicit Initialize() call
+            Debug.Log("[SOD Multiplayer] ServerBrowserUI component created. Call Initialize() to setup UI.");
         }
         
         private void Update()
@@ -59,6 +68,27 @@ namespace SOD.Multiplayer.Client.UI
             }
         }
         
+        public void ToggleVisibility(bool show)
+        {
+            if (_serverBrowserPanel == null)
+            {
+                Debug.LogWarning("[SOD Multiplayer] UI not initialized yet!");
+                return;
+            }
+            
+            _serverBrowserPanel.SetActive(show);
+            
+            if (show)
+            {
+                RefreshServerList();
+                Debug.Log("[SOD Multiplayer] Server Browser opened.");
+            }
+            else
+            {
+                Debug.Log("[SOD Multiplayer] Server Browser closed.");
+            }
+        }
+        
         public void ToggleUI()
         {
             if (_serverBrowserPanel == null)
@@ -68,17 +98,17 @@ namespace SOD.Multiplayer.Client.UI
             }
             
             bool newState = !_serverBrowserPanel.activeSelf;
-            _serverBrowserPanel.SetActive(newState);
-            
-            if (newState)
-            {
-                RefreshServerList();
-                Debug.Log("[SOD Multiplayer] Server Browser opened.");
-            }
-            else
-            {
-                Debug.Log("[SOD Multiplayer] Server Browser closed.");
-            }
+            ToggleVisibility(newState);
+        }
+        
+        public void Show()
+        {
+            ToggleVisibility(true);
+        }
+        
+        public void Hide()
+        {
+            ToggleVisibility(false);
         }
         
         private void InitializeUI()
