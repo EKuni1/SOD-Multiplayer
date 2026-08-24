@@ -11,15 +11,6 @@ namespace SOD.Multiplayer.Client.Harmony
     {
         private static bool _uiInitialized = false;
         
-        // Find a reliable main menu method to patch
-        // You may need to adjust this based on actual game decompilation
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(UnityEngine.Object), nameof(UnityEngine.Object.FindObjectOfType))]
-        public static void FindObjectOfType_Postfix(System.Type type, UnityEngine.Object __result)
-        {
-            // This is a fallback - we'll use a more direct approach below
-        }
-        
         // Alternative: Patch any Canvas creation in the game
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Canvas), nameof(Canvas.Awake))]
