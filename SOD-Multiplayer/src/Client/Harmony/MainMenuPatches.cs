@@ -2,6 +2,7 @@ using System;
 using HarmonyLib;
 using UnityEngine;
 using SOD.Multiplayer.Client.UI;
+using SOD.Multiplayer.Client.Network;
 
 namespace SOD.Multiplayer.Client.Harmony
 {
@@ -10,21 +11,6 @@ namespace SOD.Multiplayer.Client.Harmony
     public class MainMenuPatches
     {
         private static bool _uiInitialized = false;
-        
-        // Alternative: Patch any Canvas creation in the game
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Canvas), nameof(Canvas.Awake))]
-        public static void Canvas_Awake_Postfix(Canvas __instance)
-        {
-            if (_uiInitialized) return;
-            
-            // Check if this looks like a main menu canvas
-            if (__instance.gameObject.name.Contains("Menu") || __instance.gameObject.name.Contains("UI"))
-            {
-                InitializeMultiplayerUI();
-                _uiInitialized = true;
-            }
-        }
         
         // More reliable: Just initialize on first update
         [HarmonyPrefix]
