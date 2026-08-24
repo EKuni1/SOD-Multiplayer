@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -18,18 +19,31 @@ namespace SOD.Multiplayer.Dedicated
         private string _password;
         private bool _hasPassword;
         private string _masterServerUrl;
+        private string _masterAuthToken;
+        private string _selectedSavePath = "";
+        private string _selectedMapName = "";
         private string _serverId;
+        private readonly object _worldStateLock = new();
+        private readonly WorldSnapshotPacket _worldSnapshot = new()
+        {
+            Type = PacketType.WorldSnapshot,
+            Weather = "Clear"
+        };
+        private long _worldRevision;
+        private readonly string _worldStatePath = Path.Combine(AppContext.BaseDirectory, "world-state.json");
         
         public const int MAX_PLAYERS = 4;
         
-        public GameServer(string name, int port, string password, string masterServerUrl)
+        public GameServer(string name, int port, string password, string masterServerUrl, string masterAuthToken)
         {
             _serverName = name;
             _port = port;
             _password = password;
             _hasPassword = !string.IsNullOrEmpty(password);
             _masterServerUrl = masterServerUrl;
+            _masterAuthToken = masterAuthToken;
             _serverId = Guid.NewGuid().ToString();
+            LoadWorldState();
         }
         
         public async Task StartAsync()
@@ -111,7 +125,8 @@ namespace SOD.Multiplayer.Dedicated
             {
                 Type = PacketType.JoinAccepted,
                 Accepted = true,
-                AssignedPlayerId = playerId
+                AssignedPlayerId = playerId,
+                IsHost = client == _clients[0]
             };
             await client.SendPacketAsync(acceptResponse);
             
@@ -124,6 +139,19 @@ namespace SOD.Multiplayer.Dedicated
             
             // Send current player list to new player
             await SendPlayerListAsync(client);
+            await client.SendPacketAsync(GetWorldSnapshot());
+        }
+
+        public async Task HandleSessionSelectedAsync(ClientConnection client, SessionSelectedPacket packet)
+        {
+            if (_clients.Count == 0 || client != _clients[0])
+                return;
+
+            _selectedSavePath = packet.SavePath ?? "";
+            _selectedMapName = packet.MapName ?? "";
+            SaveWorldState();
+            packet.Type = PacketType.SessionSelectedBroadcast;
+            await BroadcastAsync(packet);
         }
         
         public void HandlePlayerLeave(ClientConnection client)
@@ -159,7 +187,7 @@ namespace SOD.Multiplayer.Dedicated
             await client.SendPacketAsync(gameState);
         }
         
-        private async Task BroadcastAsync(Packet packet)
+        internal async Task BroadcastAsync(Packet packet)
         {
             foreach (var client in _clients)
             {
@@ -175,6 +203,149 @@ namespace SOD.Multiplayer.Dedicated
                 {
                     await client.SendPacketAsync(packet);
                 }
+            }
+        }
+
+        public async Task HandlePlayerUpdateAsync(ClientConnection client, PlayerUpdatePacket packet)
+        {
+            client.PositionX = packet.PositionX;
+            client.PositionY = packet.PositionY;
+            client.PositionZ = packet.PositionZ;
+            client.RotationX = packet.RotationX;
+            client.RotationY = packet.RotationY;
+            client.RotationZ = packet.RotationZ;
+            client.RotationW = packet.RotationW;
+
+            await BroadcastToOthersAsync(client, new PlayerUpdatePacket
+            {
+                Type = PacketType.PlayerUpdate,
+                SenderId = client.PlayerId,
+                PositionX = packet.PositionX,
+                PositionY = packet.PositionY,
+                PositionZ = packet.PositionZ,
+                RotationX = packet.RotationX,
+                RotationY = packet.RotationY,
+                RotationZ = packet.RotationZ,
+                RotationW = packet.RotationW
+            });
+        }
+
+        public async Task HandleWorldActionAsync(ClientConnection client, WorldActionPacket packet)
+        {
+            WorldActionPacket authoritativeAction;
+            lock (_worldStateLock)
+            {
+                _worldRevision++;
+                _worldSnapshot.Revision = _worldRevision;
+                _worldSnapshot.ServerTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                _worldSnapshot.Entities.RemoveAll(entity =>
+                    entity.EntityType == packet.EntityType && entity.EntityId == packet.EntityId);
+                _worldSnapshot.Entities.Add(new WorldEntityState
+                {
+                    EntityType = packet.EntityType,
+                    EntityId = packet.EntityId,
+                    StateJson = packet.StateJson
+                });
+
+                authoritativeAction = new WorldActionPacket
+                {
+                    Type = PacketType.WorldActionBroadcast,
+                    SenderId = client.PlayerId,
+                    EntityType = packet.EntityType,
+                    EntityId = packet.EntityId,
+                    Action = packet.Action,
+                    StateJson = packet.StateJson,
+                    ClientTick = _worldSnapshot.ServerTick
+                };
+            }
+
+            await BroadcastAsync(authoritativeAction);
+            SaveWorldState();
+        }
+
+        public async Task HandleWorldSnapshotAsync(ClientConnection client, WorldSnapshotPacket packet)
+        {
+            lock (_worldStateLock)
+            {
+                if (_clients.Count == 0 || _clients[0] != client)
+                    return;
+
+                _worldRevision++;
+                packet.Type = PacketType.WorldSnapshot;
+                packet.Revision = _worldRevision;
+                packet.ServerTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                _worldSnapshot.TimeOfDay = packet.TimeOfDay;
+                _worldSnapshot.Weather = packet.Weather;
+                _worldSnapshot.Entities = packet.Entities ?? new List<WorldEntityState>();
+                _worldSnapshot.Citizens = packet.Citizens ?? new List<CitizenState>();
+                _worldSnapshot.Revision = packet.Revision;
+                _worldSnapshot.ServerTick = packet.ServerTick;
+            }
+
+            await BroadcastAsync(GetWorldSnapshot());
+            SaveWorldState();
+        }
+
+        private void LoadWorldState()
+        {
+            try
+            {
+                if (!File.Exists(_worldStatePath))
+                    return;
+
+                var saved = JsonConvert.DeserializeObject<WorldSnapshotPacket>(File.ReadAllText(_worldStatePath));
+                if (saved == null)
+                    return;
+
+                lock (_worldStateLock)
+                {
+                    _worldRevision = saved.Revision;
+                    _worldSnapshot.Revision = saved.Revision;
+                    _worldSnapshot.ServerTick = saved.ServerTick;
+                    _worldSnapshot.TimeOfDay = saved.TimeOfDay;
+                    _worldSnapshot.Weather = saved.Weather;
+                    _worldSnapshot.Entities = saved.Entities ?? new List<WorldEntityState>();
+                    _worldSnapshot.Citizens = saved.Citizens ?? new List<CitizenState>();
+                }
+                Console.WriteLine($"[Dedicated Server] World state loaded from {_worldStatePath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Dedicated Server] World state load failed: {ex.Message}");
+            }
+        }
+
+        private void SaveWorldState()
+        {
+            try
+            {
+                File.WriteAllText(_worldStatePath, JsonConvert.SerializeObject(GetWorldSnapshot(), Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Dedicated Server] World state save failed: {ex.Message}");
+            }
+        }
+
+        public async Task SendWorldSnapshotAsync(ClientConnection client)
+        {
+            await client.SendPacketAsync(GetWorldSnapshot());
+        }
+
+        private WorldSnapshotPacket GetWorldSnapshot()
+        {
+            lock (_worldStateLock)
+            {
+                return new WorldSnapshotPacket
+                {
+                    Type = PacketType.WorldSnapshot,
+                    Revision = _worldSnapshot.Revision,
+                    ServerTick = _worldSnapshot.ServerTick,
+                    TimeOfDay = _worldSnapshot.TimeOfDay,
+                    Weather = _worldSnapshot.Weather,
+                    Entities = new List<WorldEntityState>(_worldSnapshot.Entities),
+                    Citizens = new List<CitizenState>(_worldSnapshot.Citizens)
+                };
             }
         }
         
@@ -199,6 +370,7 @@ namespace SOD.Multiplayer.Dedicated
                     using (var httpClient = new System.Net.Http.HttpClient())
                     {
                         var content = new StringContent(JsonConvert.SerializeObject(serverInfo), Encoding.UTF8, "application/json");
+                        httpClient.DefaultRequestHeaders.Add("X-Auth-Token", _masterAuthToken);
                         var response = await httpClient.PostAsync($"{_masterServerUrl}/api/servers/register", content);
                         
                         if (response.IsSuccessStatusCode)
@@ -252,7 +424,10 @@ namespace SOD.Multiplayer.Dedicated
                         gameState.Players.Add(new PlayerInfo
                         {
                             Id = client.PlayerId,
-                            Name = client.PlayerName
+                            Name = client.PlayerName,
+                            PositionX = client.PositionX,
+                            PositionY = client.PositionY,
+                            PositionZ = client.PositionZ
                         });
                     }
                     
@@ -274,6 +449,13 @@ namespace SOD.Multiplayer.Dedicated
         
         public string PlayerId { get; set; } = "";
         public string PlayerName { get; set; } = "";
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+        public float PositionZ { get; set; }
+        public float RotationX { get; set; }
+        public float RotationY { get; set; }
+        public float RotationZ { get; set; }
+        public float RotationW { get; set; } = 1f;
         
         public ClientConnection(TcpClient client, GameServer server)
         {
@@ -346,7 +528,27 @@ namespace SOD.Multiplayer.Dedicated
                         break;
                         
                     case PacketType.PlayerUpdate:
-                        // Handle player position updates
+                        var playerUpdate = JsonConvert.DeserializeObject<PlayerUpdatePacket>(json);
+                        await _server.HandlePlayerUpdateAsync(this, playerUpdate);
+                        break;
+
+                    case PacketType.WorldAction:
+                        var worldAction = JsonConvert.DeserializeObject<WorldActionPacket>(json);
+                        await _server.HandleWorldActionAsync(this, worldAction);
+                        break;
+
+                    case PacketType.WorldSnapshotRequest:
+                        await _server.SendWorldSnapshotAsync(this);
+                        break;
+
+                    case PacketType.SessionSelected:
+                        var session = JsonConvert.DeserializeObject<SessionSelectedPacket>(json);
+                        await _server.HandleSessionSelectedAsync(this, session);
+                        break;
+
+                    case PacketType.WorldSnapshot:
+                        var worldSnapshot = JsonConvert.DeserializeObject<WorldSnapshotPacket>(json);
+                        await _server.HandleWorldSnapshotAsync(this, worldSnapshot);
                         break;
                         
                     case PacketType.ChatMessage:
