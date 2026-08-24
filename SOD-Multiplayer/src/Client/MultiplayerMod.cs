@@ -49,9 +49,8 @@ namespace SOD.Multiplayer.Client
 
             var runtimeObject = new GameObject("SOD Multiplayer Runtime");
             UnityEngine.Object.DontDestroyOnLoad(runtimeObject);
-            var browser = runtimeObject.AddComponent<ServerBrowserUI>();
             var runtime = runtimeObject.AddComponent<MultiplayerRuntime>();
-            runtime.SetBrowser(browser);
+            Log.LogInfo("Separates Multiplayer-Fenster erstellt. Tastenkombination: Ctrl+M");
             
             // Initialize Harmony
             HarmonyInstance = new HarmonyLib.Harmony("com.sod.multiplayer");

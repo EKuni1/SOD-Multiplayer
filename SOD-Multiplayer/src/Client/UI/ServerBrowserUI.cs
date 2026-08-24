@@ -68,7 +68,7 @@ namespace SOD.Multiplayer.Client.UI
                 Show();
         }
 
-        private void Update()
+        public void Update()
         {
             if (_serverBrowserPanel != null && _serverBrowserPanel.activeSelf && Input.GetKeyDown(KeyCode.Escape))
                 Hide();
@@ -127,13 +127,24 @@ namespace SOD.Multiplayer.Client.UI
         
         public void Show()
         {
+            if (_serverBrowserPanel == null)
+            {
+                MultiplayerMod.Instance?.Log.LogError("ServerBrowserUI.Show: Panel wurde nicht erstellt.");
+                return;
+            }
+
             _serverBrowserPanel.SetActive(true);
+            MultiplayerMod.Instance?.Log.LogInfo("Serverbrowser geoeffnet.");
             RefreshServerList();
         }
         
         public void Hide()
         {
+            if (_serverBrowserPanel == null)
+                return;
+
             _serverBrowserPanel.SetActive(false);
+            MultiplayerMod.Instance?.Log.LogInfo("Serverbrowser geschlossen.");
         }
         
         private void RefreshServerList()

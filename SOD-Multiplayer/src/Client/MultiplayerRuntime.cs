@@ -9,6 +9,8 @@ namespace SOD.Multiplayer.Client
     {
         private bool _controlWasDown;
         private ServerBrowserUI _browser;
+        private float _nextRecoveryCheck;
+        private bool _openedInitially;
 
         public MultiplayerRuntime(IntPtr ptr) : base(ptr)
         {
@@ -24,8 +26,28 @@ namespace SOD.Multiplayer.Client
             _browser = browser;
         }
 
-        private void Update()
+        private void EnsureBrowser()
         {
+            if (_browser != null)
+                return;
+
+            _browser = gameObject.GetComponent<ServerBrowserUI>();
+            if (_browser == null)
+                _browser = gameObject.AddComponent<ServerBrowserUI>();
+
+            Debug.Log("[SOD Multiplayer] Serverbrowser im Unity-Frame initialisiert.");
+
+            if (!_openedInitially)
+            {
+                _openedInitially = true;
+                _browser.Show();
+            }
+        }
+
+        public void Update()
+        {
+            EnsureBrowser();
+
             var controlDown = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             var menuPressed = Input.GetKeyDown(KeyCode.M);
 
@@ -43,6 +65,13 @@ namespace SOD.Multiplayer.Client
             }
 
             _controlWasDown = controlDown;
+
+            if (Time.unscaledTime >= _nextRecoveryCheck)
+            {
+                _nextRecoveryCheck = Time.unscaledTime + 1f;
+                if (_browser == null)
+                    _browser = GetComponent<ServerBrowserUI>();
+            }
         }
     }
 }
