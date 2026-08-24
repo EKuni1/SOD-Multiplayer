@@ -11,6 +11,7 @@ namespace SOD.Multiplayer.Client
         private ServerBrowserUI _browser;
         private float _nextRecoveryCheck;
         private bool _openedInitially;
+        private float _startedAt;
 
         public MultiplayerRuntime(IntPtr ptr) : base(ptr)
         {
@@ -48,6 +49,12 @@ namespace SOD.Multiplayer.Client
 
         public void Update()
         {
+            if (_startedAt <= 0f)
+            {
+                _startedAt = Time.unscaledTime;
+                Debug.Log("[SOD Multiplayer] MultiplayerRuntime Update is active.");
+            }
+
             EnsureBrowser();
 
             var controlDown = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
@@ -66,13 +73,24 @@ namespace SOD.Multiplayer.Client
                 }
             }
 
+            if (!_openedInitially && Time.unscaledTime - _startedAt >= 2f && _browser != null)
+            {
+                _openedInitially = true;
+                _browser.ToggleVisibility(true);
+                Debug.Log("[SOD Multiplayer] Separate server browser opened automatically.");
+            }
+
             _controlWasDown = controlDown;
 
             if (Time.unscaledTime >= _nextRecoveryCheck)
             {
                 _nextRecoveryCheck = Time.unscaledTime + 1f;
                 if (_browser == null)
+                {
                     _browser = GetComponent<ServerBrowserUI>();
+                    if (_browser != null)
+                        _browser.Initialize();
+                }
             }
         }
     }

@@ -66,7 +66,7 @@ namespace SOD.Multiplayer.Client
             }
             
             Log.LogInfo("Multiplayer Mod initialization complete.");
-            Log.LogInfo("The UI will be initialized when the game's main menu loads.");
+            Log.LogInfo("Separate server browser will be created independently of the main menu.");
         }
     }
 }
