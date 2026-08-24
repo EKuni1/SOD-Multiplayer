@@ -280,10 +280,14 @@ namespace SOD.Multiplayer.Client.UI
         // Helper methods to create UI elements
         private GameObject CreatePanel(Transform parent, string name, Vector2 pos, Vector2 size)
         {
+            if (parent == null)
+                throw new InvalidOperationException($"Cannot create UI panel '{name}' without a parent.");
+
             var obj = new GameObject(name);
             obj.transform.SetParent(parent, false);
-            obj.AddComponent<RectTransform>().anchoredPosition = pos;
-            obj.AddComponent<RectTransform>().sizeDelta = size;
+            var rect = obj.GetComponent<RectTransform>() ?? obj.AddComponent<RectTransform>();
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = size;
             
             var img = obj.AddComponent<Image>();
             img.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);

@@ -370,3 +370,197 @@ Basierend auf der Analyse der bereitgestellten Assembly:
 Beginnend mit **Phase 1**: Grundlegende Netzwerkverbindung zwischen Client und Dedicated Server.
 
 Jede Phase wird separat implementiert, dokumentiert und getestet bevor mit der nächsten fortgefahren wird.
+
+---
+
+## Aktueller Stand fuer weitere Entwicklung
+
+Dieser Abschnitt beschreibt den Code, der aktuell unter `src/` gebaut wird. Die Verzeichnisse
+`Client/Source`, `DedicatedServer/Source` und `MasterServer/Source` enthalten einen aelteren
+Entwurf und duerfen fuer neue Aenderungen nicht als Referenz verwendet werden.
+
+### Lokale Spielinstallation
+
+Die Referenzen des Client-Projekts zeigen auf:
+
+```text
+E:\Games\Shadows of Doubt
+```
+
+Der Pfad wird in `src/Directory.Build.props` als `SODGamePath` gesetzt. Die relevanten Dateien
+kommen aus `BepInEx/core` und `BepInEx/interop`:
+
+- `BepInEx.Unity.IL2CPP.dll`
+- `Il2CppInterop.Runtime.dll`
+- `UnityEngine.CoreModule.dll`
+- `UnityEngine.UIModule.dll`
+- `UnityEngine.UI.dll`
+- `UnityEngine.UnityWebRequestModule.dll`
+- `Unity.TextMeshPro.dll`
+- `Assembly-CSharp.dll`
+- `Il2Cppmscorlib.dll`
+- `Il2CppSystem.dll`
+
+### Build-Befehle
+
+Aus dem Repository-Hauptverzeichnis:
+
+```powershell
+dotnet build .\SOD-Multiplayer\src\Client\MultiplayerMod.csproj -c Release
+dotnet build .\SOD-Multiplayer\src\DedicatedServer\SOD.Multiplayer.Dedicated.csproj -c Release
+dotnet build .\SOD-Multiplayer\src\MasterServer\SOD.Multiplayer.Master.csproj -c Release
+```
+
+Die Client-DLL liegt danach unter:
+
+```text
+SOD-Multiplayer\src\Client\bin\Release\MultiplayerMod.dll
+```
+
+Sie wird nach `E:\Games\Shadows of Doubt\BepInEx\plugins\` kopiert.
+
+### Config-Dateien
+
+Der Master Server liest `master.cfg` neben seiner Anwendung. Beim normalen Build wird die Datei
+nach `src/MasterServer/bin/Release/net6.0/master.cfg` kopiert:
+
+```json
+{
+  "bindAddress": "192.168.178.76",
+  "port": 5000,
+  "heartbeatTimeout": 30,
+  "region": "EU",
+  "authToken": "change-this-token"
+}
+```
+
+Der Pfad kann mit `SOD_MASTER_CONFIG` ueberschrieben werden. Der Dedicated Server verwendet:
+
+- `SOD_MASTER_URL`, Standard `http://192.168.178.76:5000`
+- `SOD_MASTER_AUTH_TOKEN`, Standard `change-this-token`
+- `SOD_SERVER_NAME`
+- `SOD_SERVER_PORT`
+- `SOD_SERVER_PASSWORD`
+
+Der Client erzeugt seine BepInEx-Konfiguration unter:
+
+```text
+E:\Games\Shadows of Doubt\BepInEx\config\com.sod.multiplayer.cfg
+```
+
+Die Eintraege heissen `Url` und `AuthToken` in der Sektion `Master Server`.
+
+### Netzwerkablauf
+
+1. Der Master Server startet zuerst und bindet an `BindAddress:Port`.
+2. Der Dedicated Server startet seinen TCP-Listener und sendet alle zehn Sekunden einen
+   Registrierungs-Heartbeat per HTTP.
+3. Der Client laedt die Master-URL aus der BepInEx-Config und fordert `/api/servers` an.
+4. Der Client verbindet sich per TCP mit dem ausgewaehlten Dedicated Server.
+5. Der erste erfolgreiche Join wird serverseitig als Host markiert.
+6. Weltaktionen werden vom Dedicated Server mit Revision und Serverzeit verteilt.
+
+Master-HTTP-Endpunkte:
+
+- `GET /api/health` ist ungeschuetzt.
+- `GET /api/servers` benoetigt `X-Auth-Token`.
+- `POST /api/servers/register` benoetigt `X-Auth-Token`.
+- `DELETE /api/servers/{id}` benoetigt `X-Auth-Token`.
+
+Der Client sendet das Token mit `X-Auth-Token`. Der Dedicated Server verwendet denselben Header
+bei Registrierung und Heartbeat. Das Token darf nicht im oeffentlichen Repository verbleiben.
+
+### Aktuell implementierte Client-Funktionen
+
+- BepInEx-Plugin-Laden unter IL2CPP
+- Registrierung von `ServerBrowserUI`, `ServerSelectData` und `RuntimeDiagnostics`
+- dynamischer Patch von `MainMenuController.Awake`
+- Multiplayer-Button und Serverbrowser
+- Serverauswahl und Passwortfeld
+- TCP-Join/Leave und Host-Erkennung
+- Host-Savegame-Auswahl ueber `SessionSelectedPacket`
+- Spielzeit und Wetter als Session-Weltzustand
+- Tuerstatus ueber `DoorMovementController.SetOpen`
+- Firmenstatus ueber `Company.SetOpen`
+- Nebenjobstatus ueber `SideJob.SetJobState`
+- Case-Status ueber `Case.SetStatus`
+- Pointboard-Pinpositionen ueber `CaseElement.caseID`, `CaseElement.id` und `pinnedRect`
+- Buerger-Tod ueber `CitizenAnimationController.SetDead`
+- Spielerpositionen im Serverzustand
+- interpolierte Remote-Spieler-Marker
+- eingehende Chatnachrichten im UI
+- persistenter Welt-Snapshot in `world-state.json`
+
+### WorldSync-Regeln
+
+`src/Client/Harmony/WorldSync.cs` ist die zentrale Bruecke zwischen Harmony und Netzwerk.
+
+- Jeder ausgehende Hook prueft `NetworkClient.Active`, Verbindung und Hoststatus.
+- Eingehende Events werden mit `_applyingRemoteState` markiert.
+- Diese Markierung verhindert, dass das Anwenden eines Remote-Events erneut ein Sende-Event ausloest.
+- IDs muessen stabil sein. GameObject-Namen sind nur ein Fallback und nicht fuer globale Eindeutigkeit
+  geeignet.
+- Unity-Objekte duerfen nur auf dem Unity-Hauptthread veraendert werden.
+
+### Laufzeitdiagnose
+
+`RuntimeDiagnostics` schreibt waehrend des Spiels regelmaessige NDJSON-Aufzeichnungen. Gespeichert
+werden Spiel- und Unity-Version, erkannte Spielmethoden, Szene, SessionData, Cases, Pins, Firmen,
+Jobs, Tueren, Buerger, Netzwerkstatus sowie eingehende und ausgehende Pakete.
+
+Der Zielordner ist:
+
+```text
+<Application.persistentDataPath>\SOD-Multiplayer\diagnostics\
+```
+
+Die Dateien heissen `session-YYYYMMDD-HHMMSS.ndjson`. Beim Testen sollten folgende Aktionen
+ausgefuehrt werden, damit die naechste Implementierungsrunde belastbare Daten erhaelt:
+
+1. Master Server starten und Serverliste laden.
+2. Zwei Clients verbinden.
+3. Eine Tuer oeffnen und schliessen.
+4. Zeit und Wetter veraendern.
+5. Einen Case oeffnen, einen Pin verschieben und eine Verbindung erstellen/loesen.
+6. Einen Nebenjob und eine Firma veraendern.
+7. Einen Buerger beschaedigen oder toeten.
+8. Einen Aufzug rufen und ein Item aufnehmen/ablegen.
+9. Chatnachrichten senden und einen Client trennen.
+
+### Noch zu implementieren
+
+Die folgenden Funktionen sind im Protokoll beziehungsweise in Teilen der Snapshot-Struktur
+vorbereitet, aber noch nicht vollstaendig in der Spielassembly angewendet:
+
+- Pointboard-Verbindungen zwischen zwei Pins: `StringConnection`-Create/Delete
+- vollstaendige Case-Elemente und Evidence-Zustaende
+- Aufzugziel, Aufzugbewegung und Mitfahrer
+- Item-ID, Besitzer, Weltposition und Inventar-Slots
+- Buergerposition, Rotation, Schaden und stabile Citizen-ID
+- echte Remote-Spielerobjekte statt Test-Wuerfel-Marker
+- Remote-Spieler-Entfernung nach `PlayerLeft`
+- Chat-Eingabefeld und Senden per UI
+- atomisches Schreiben und Laden von `world-state.json`
+
+### Vorgehen fuer neue Spielpatches
+
+1. Die echte Signatur in `SOD-Assembly` oder der installierten `Assembly-CSharp.dll` pruefen.
+2. Einen neuen `WorldEntityType` oder eine eindeutige Aktion festlegen.
+3. ID und serialisierbaren Zustand in `WorldActionPacket` aufnehmen.
+4. Im Host-Postfix nur senden, niemals lokale Objekte im Netzwerkthread veraendern.
+5. In `WorldSync.Apply` anhand der ID suchen und unter Remote-State-Schutz anwenden.
+6. Einen Diagnose-Snapshot und einen Zwei-Client-Test ausfuehren.
+7. Alle drei Projekte bauen, bevor die DLL ins Spiel kopiert wird.
+
+### Bekannte technische Risiken
+
+- Die Spielassembly ist IL2CPP-generiert; Unity-Listen sind haeufig `Il2CppSystem`-Listen und
+  nicht direkt mit .NET-LINQ kompatibel.
+- `Harmony.PatchAll()` darf keine Patchklasse mit unbestimmtem Ziel enthalten. Dynamische Ziele
+  muessen vor `Patch` mit `AccessTools.Method` geprueft werden.
+- `MonoBehaviour`-Klassen benoetigen IL2CPP-Konstruktoren mit `IntPtr` sowie Registrierung durch
+  `ClassInjector.RegisterTypeInIl2Cpp<T>()`.
+- Die aktuelle Kommunikation verwendet TCP und Klartext-Passwoerter. Fuer oeffentliche Server
+  sind TLS oder Challenge-Response und ein sicher verwaltetes Token erforderlich.
+- .NET 6 ist im verwendeten SDK als veraltet markiert. Ein Upgrade muss gegen die BepInEx-/Unity-
+  Abhaengigkeiten getestet werden.
