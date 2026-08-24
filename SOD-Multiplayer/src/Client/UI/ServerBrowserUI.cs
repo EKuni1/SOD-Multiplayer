@@ -117,16 +117,6 @@ namespace SOD.Multiplayer.Client.UI
             ToggleVisibility(newState);
         }
         
-        public void Show()
-        {
-            ToggleVisibility(true);
-        }
-        
-        public void Hide()
-        {
-            ToggleVisibility(false);
-        }
-        
         private void InitializeUI()
         {
             // Create main panel
@@ -175,28 +165,6 @@ namespace SOD.Multiplayer.Client.UI
             _serverBrowserPanel.SetActive(false);
             
             Debug.Log("[SOD Multiplayer] Server Browser UI created. Press CTRL+M to open.");
-        }
-        
-        public void Show()
-        {
-            if (_serverBrowserPanel == null)
-            {
-                MultiplayerMod.Instance?.Log.LogError("ServerBrowserUI.Show: Panel wurde nicht erstellt.");
-                return;
-            }
-
-            _serverBrowserPanel.SetActive(true);
-            MultiplayerMod.Instance?.Log.LogInfo("Serverbrowser geoeffnet.");
-            RefreshServerList();
-        }
-        
-        public void Hide()
-        {
-            if (_serverBrowserPanel == null)
-                return;
-
-            _serverBrowserPanel.SetActive(false);
-            MultiplayerMod.Instance?.Log.LogInfo("Serverbrowser geschlossen.");
         }
         
         private void RefreshServerList()
