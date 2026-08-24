@@ -35,12 +35,14 @@ namespace SOD.Multiplayer.Client
             if (_browser == null)
                 _browser = gameObject.AddComponent<ServerBrowserUI>();
 
+            _browser.Initialize();
+
             Debug.Log("[SOD Multiplayer] Serverbrowser im Unity-Frame initialisiert.");
 
             if (!_openedInitially)
             {
                 _openedInitially = true;
-                _browser.Show();
+                _browser.ToggleVisibility(true);
             }
         }
 
@@ -59,7 +61,7 @@ namespace SOD.Multiplayer.Client
                 }
                 else
                 {
-                    _browser.ToggleMenu();
+                    _browser.ToggleUI();
                     Debug.Log("[SOD Multiplayer] Serverbrowser toggled with Ctrl+M.");
                 }
             }

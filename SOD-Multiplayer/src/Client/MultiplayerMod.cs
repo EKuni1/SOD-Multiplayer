@@ -3,7 +3,7 @@ using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using UnityEngine;
-using System.Reflection;
+using SOD.Multiplayer.Client.UI;
 
 namespace SOD.Multiplayer.Client
 {
@@ -43,12 +43,20 @@ namespace SOD.Multiplayer.Client
             Log.LogInfo("Controls: Press CTRL+M to open Server Browser");
             Log.LogInfo("===========================================");
             
-            // Initialize Harmony
-            HarmonyInstance = new Harmony("com.sod.multiplayer");
+            ClassInjector.RegisterTypeInIl2Cpp<ServerBrowserUI>();
+            ClassInjector.RegisterTypeInIl2Cpp<ServerSelectData>();
+            ClassInjector.RegisterTypeInIl2Cpp<MultiplayerRuntime>();
+
+            var runtimeObject = new GameObject("SOD Multiplayer Runtime");
+            UnityEngine.Object.DontDestroyOnLoad(runtimeObject);
+            runtimeObject.AddComponent<MultiplayerRuntime>();
+
+            // Initialize Harmony only for gameplay patches.
+            HarmonyInstance = new HarmonyLib.Harmony("com.sod.multiplayer");
             
             try
             {
-                HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                HarmonyInstance.PatchAll();
                 Log.LogInfo("Harmony patches applied successfully.");
             }
             catch (System.Exception ex)

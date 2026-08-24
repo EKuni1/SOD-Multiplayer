@@ -41,8 +41,6 @@ namespace SOD.Multiplayer.Client.UI
         // Master Server URL - configure this!
         private string _masterServerUrl = "http://localhost:5000";
         
-        // Keyboard shortcut handling
-        private bool _ctrlPressed = false;
         private bool _initialized = false;
         
         public void Initialize()
@@ -70,18 +68,9 @@ namespace SOD.Multiplayer.Client.UI
             Debug.Log("[SOD Multiplayer] ServerBrowserUI component created. Call Initialize() to setup UI.");
         }
         
-        private void Update()
+        public void Update()
         {
-            // Handle Ctrl+M keyboard shortcut
-            if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
-            {
-                _ctrlPressed = true;
-            }
-            else if (_ctrlPressed && Input.GetKeyDown(KeyCode.M))
-            {
-                ToggleUI();
-                _ctrlPressed = false;
-            }
+            UpdateNetworkState();
         }
         
         public void ToggleVisibility(bool show)
@@ -326,7 +315,7 @@ namespace SOD.Multiplayer.Client.UI
         
         private void OnCloseClicked()
         {
-            Hide();
+            ToggleVisibility(false);
         }
         
         // Helper methods to create UI elements
