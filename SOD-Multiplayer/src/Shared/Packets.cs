@@ -11,6 +11,9 @@ namespace SOD.Multiplayer.Shared
         LeaveRequest = 2,
         PlayerUpdate = 3,
         ChatMessage = 4,
+        WorldAction = 5,
+        WorldSnapshotRequest = 6,
+        SessionSelected = 7,
         
         // Server -> Client
         JoinAccepted = 10,
@@ -20,6 +23,9 @@ namespace SOD.Multiplayer.Shared
         PlayerList = 14,
         GameState = 15,
         ChatBroadcast = 16,
+        WorldActionBroadcast = 17,
+        WorldSnapshot = 18,
+        SessionSelectedBroadcast = 19,
         
         // Master Server
         ServerRegister = 20,
@@ -47,6 +53,13 @@ namespace SOD.Multiplayer.Shared
         public bool Accepted { get; set; }
         public string Reason { get; set; } = "";
         public string AssignedPlayerId { get; set; } = "";
+        public bool IsHost { get; set; }
+    }
+
+    public class SessionSelectedPacket : Packet
+    {
+        public string SavePath { get; set; } = "";
+        public string MapName { get; set; } = "";
     }
 
     // Player Info
@@ -58,6 +71,17 @@ namespace SOD.Multiplayer.Shared
         public float PositionY { get; set; }
         public float PositionZ { get; set; }
         public bool IsHost { get; set; }
+    }
+
+    public class PlayerUpdatePacket : Packet
+    {
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+        public float PositionZ { get; set; }
+        public float RotationX { get; set; }
+        public float RotationY { get; set; }
+        public float RotationZ { get; set; }
+        public float RotationW { get; set; } = 1f;
     }
 
     // Server Info for Master Server
@@ -80,6 +104,55 @@ namespace SOD.Multiplayer.Shared
         public List<PlayerInfo> Players { get; set; } = new();
         public string TimeOfDay { get; set; } = "12:00";
         public string CurrentMission { get; set; } = "";
+    }
+
+    public enum WorldEntityType
+    {
+        Case,
+        Citizen,
+        Pinboard,
+        Door,
+        Company,
+        Elevator,
+        Item,
+        Object
+    }
+
+    public class WorldActionPacket : Packet
+    {
+        public WorldEntityType EntityType { get; set; }
+        public string EntityId { get; set; } = "";
+        public string Action { get; set; } = "";
+        public string StateJson { get; set; } = "{}";
+        public long ClientTick { get; set; }
+    }
+
+    public class WorldEntityState
+    {
+        public WorldEntityType EntityType { get; set; }
+        public string EntityId { get; set; } = "";
+        public string StateJson { get; set; } = "{}";
+    }
+
+    public class CitizenState : WorldEntityState
+    {
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+        public float PositionZ { get; set; }
+        public float RotationX { get; set; }
+        public float RotationY { get; set; }
+        public float RotationZ { get; set; }
+        public float RotationW { get; set; } = 1f;
+    }
+
+    public class WorldSnapshotPacket : Packet
+    {
+        public long Revision { get; set; }
+        public long ServerTick { get; set; }
+        public string TimeOfDay { get; set; } = "12:00";
+        public string Weather { get; set; } = "Clear";
+        public List<WorldEntityState> Entities { get; set; } = new();
+        public List<CitizenState> Citizens { get; set; } = new();
     }
 
     // Chat

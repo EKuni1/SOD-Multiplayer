@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using SOD.Multiplayer.Shared;
+using SOD.Multiplayer.Client.Harmony;
 
 namespace SOD.Multiplayer.Client.Network
 {
     public class PacketHandler
     {
+        public event Action<GameStatePacket> GameStateReceived;
+        public event Action<ChatPacket> ChatReceived;
         private NetworkClient _client;
         
         public PacketHandler(NetworkClient client)
@@ -41,6 +44,18 @@ namespace SOD.Multiplayer.Client.Network
                     
                 case PacketType.GameState:
                     OnGameStateReceived(packet as GameStatePacket);
+                    break;
+
+                case PacketType.PlayerUpdate:
+                    OnPlayerUpdateReceived(packet as PlayerUpdatePacket);
+                    break;
+
+                case PacketType.WorldActionBroadcast:
+                    OnWorldActionReceived(packet as WorldActionPacket);
+                    break;
+
+                case PacketType.WorldSnapshot:
+                    OnWorldSnapshotReceived(packet as WorldSnapshotPacket);
                     break;
                     
                 case PacketType.ChatBroadcast:
@@ -88,12 +103,34 @@ namespace SOD.Multiplayer.Client.Network
         {
             // Update game state based on server data
             UnityEngine.Debug.Log($"[SOD Multiplayer] Game state update: Time={packet.TimeOfDay}");
+            GameStateReceived?.Invoke(packet);
+        }
+
+        private void OnPlayerUpdateReceived(PlayerUpdatePacket packet)
+        {
+            if (packet == null) return;
+            UnityEngine.Debug.Log($"[SOD Multiplayer] Player {packet.SenderId} position update received");
+            // The Unity player registry applies this on the main thread.
+        }
+
+        private void OnWorldActionReceived(WorldActionPacket packet)
+        {
+            if (packet == null) return;
+            UnityEngine.Debug.Log($"[SOD Multiplayer] {packet.EntityType} {packet.EntityId}: {packet.Action}");
+            WorldSync.Apply(packet);
+        }
+
+        private void OnWorldSnapshotReceived(WorldSnapshotPacket packet)
+        {
+            if (packet == null) return;
+            UnityEngine.Debug.Log($"[SOD Multiplayer] World snapshot {packet.Revision} received; weather={packet.Weather}");
+            WorldSync.Apply(packet);
         }
         
         private void OnChatMessage(ChatPacket packet)
         {
             UnityEngine.Debug.Log($"[SOD Multiplayer] Chat: {packet.Message}");
-            // Display chat message in UI
+            ChatReceived?.Invoke(packet);
         }
     }
 }
